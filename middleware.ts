@@ -24,16 +24,20 @@ export const proxy = clerkMiddleware(async (auth, req) => {
   }
 
   // Real-time block check using Clerk API
-  // Note: Inside proxy, we should be careful with external API calls.
   if (userId && !req.nextUrl.pathname.startsWith('/blocked') && !req.nextUrl.pathname.startsWith('/api')) {
     try {
+      // In Next.js Middleware (Edge Runtime), clerkClient() is available but should be used sparingly.
+      // We check if the user is blocked from the publicMetadata.
       const client = await clerkClient();
       const user = await client.users.getUser(userId);
-      if (user.publicMetadata?.isBlocked === true) {
+      
+      if (user?.publicMetadata?.isBlocked === true) {
         return NextResponse.redirect(new URL('/blocked', req.url));
       }
     } catch (error) {
-      console.error("Clerk API error in proxy:", error);
+      // If Clerk API fails, we log it but allow the request to proceed to avoid 500 errors
+      // and ensure the app remains functional.
+      console.error("Clerk API error in middleware:", error);
     }
   }
 
