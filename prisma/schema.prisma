@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String            @id
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  imageUrl      String?
+  name          String?
+  isVerified    Boolean           @default(false)
+  lastActive    DateTime          @default(now())
+  participants  ChatParticipant[]
+  comments      Comment[]
+  commentLikes  CommentLike[]
+  favorites     Favorite[]
+  listings      Listing[]
+  messages      Message[]
+  messageReactions MessageReaction[]
+  notifications Notification[]
+  plan          String            @default("FREE")
+  planExpiresAt DateTime?
+  planPriority  Int               @default(0)
+  role          String            @default("SELLER") // SELLER or REALTOR
+  isBlocked     Boolean           @default(false)
+  trialUsed     Boolean           @default(false)
+  transactions  Transaction[]
+  stories       Story[]
+  storyViews    StoryView[]
+  storyLikes    StoryLike[]
+  savedSearches SavedSearch[]
+  reviewsReceived UserReview[] @relation("ReviewsReceived")
+  reviewsSent     UserReview[] @relation("ReviewsSent")
+  reports       ListingReport[]
+  listingRatings ListingRating[]
+
+  @@index([isBlocked])
+  @@index([plan])
+}
+
+model UserReview {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now())
+  reviewerId  String
+  receiverId  String
+  
+  reviewer    User     @relation("ReviewsSent", fields: [reviewerId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("ReviewsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String?
+  filters   Json
+  polygon   Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id       String     @id @default(cuid())
+  name     String
+  type     String
+  parentId String?
+  listings Listing[]
+  parent   Location?  @relation("LocationHierarchy", fields: [parentId], references: [id])
+  children Location[] @relation("LocationHierarchy")
+}
+
+model Listing {
+  id           String     @id @default(cuid())
+  title        String
+  description  String
+  price        Float
+  type         String
+  propertyType String
+  rooms        Int
+  area         Float
+  floor        Int
+  totalFloors  Int
+  phone        String
+  latitude     Float
+  longitude    Float
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  userId       String
+  locationId   String
+  landmark     String?
+  amenities    String[]   @default([])
+  metroInfo    String?
+  chats        Chat[]
+  comments     Comment[]
+  favorites    Favorite[]
+  images       Image[]
+  location     Location   @relation(fields: [locationId], references: [id])
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views        View[]
+  reports      ListingReport[]
+  ratings      ListingRating[]
+  ratingAverage Float      @default(0)
+  ratingCount   Int        @default(0)
+
+  @@index([type])
+  @@index([propertyType])
+  @@index([price])
+  @@index([rooms])
+  @@index([locationId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([ratingAverage, ratingCount])
+}
+
+model Image {
+  id        String  @id @default(cuid())
+  url       String
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+}
+
+model View {
+  id            String   @id @default(cuid())
+  listingId     String
+  userId        String?
+  ipAddress     String?
+  viewedAt      DateTime @default(now())
+  visitorCity   String?
+  visitorRegion String?
+  listing       Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([ipAddress, listingId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  listingId String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String        @id @default(cuid())
+  text      String
+  createdAt DateTime      @default(now())
+  userId    String
+  listingId String
+  parentId  String?
+  listing   Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  parent    Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]     @relation("CommentReplies")
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes     CommentLike[]
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+model Chat {
+  id           String            @id @default(cuid())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  listingId    String?
+  listing      Listing?          @relation(fields: [listingId], references: [id])
+  participants ChatParticipant[]
+  messages     Message[]
+}
+
+model ChatParticipant {
+  id     String @id @default(cuid())
+  chatId String
+  userId String
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id            String   @id @default(cuid())
+  text          String   @default("")
+  audioUrl      String?
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  seen          Boolean  @default(false)
+  chatId        String
+  senderId      String
+  videoUrl      String?
+  audioDuration Int?
+  chat          Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  reactions     MessageReaction[]
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  createdAt DateTime @default(now())
+  messageId String
+  userId    String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+}
+
+
+model ListingView {
+  id        String   @id @default(cuid())
+  listingId String
+  viewedAt  DateTime @default(now())
+}
+
+model Banner {
+  id            String   @id @default(cuid())
+  imageUrl      String
+  title         String?
+  subtext       String?
+  buttonText    String?
+  link          String?
+  isActive      Boolean  @default(true)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  height        String?  @default("400")
+  width         String?  @default("100%")
+  duration      Int      @default(3)
+  bgPattern     String?  // e.g., "grid", "dots", "waves"
+  bgColor       String?  @default("#f3f4f6")
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  userId         String
+  amount         Float
+  currency       String   @default("UZS")
+  status         String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  provider       String   // CLICK, UZUM
+  providerTransId String? @unique
+  plan           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Story {
+  id        String      @id @default(cuid())
+  imageUrl  String?
+  videoUrl  String?
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views     StoryView[]
+  likes     StoryLike[]
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  viewedAt  DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+}
+
+model StoryLike {
+  id        String   @id @default(cuid())
+  storyId   String
+  userId    String
+  createdAt DateTime @default(now())
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, userId])
+}
+
+model ListingReport {
+  id          String   @id @default(cuid())
+  listingId   String
+  reporterId  String?
+  type        String   // SUSPICIOUS, SOLD, OTHER
+  message     String?
+  createdAt   DateTime @default(now())
+  
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporter    User?    @relation(fields: [reporterId], references: [id])
+
+  @@index([listingId])
+  @@index([reporterId])
+}
+
+model ListingRating {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5
+  createdAt DateTime @default(now())
+  userId    String
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([listingId])
+}
