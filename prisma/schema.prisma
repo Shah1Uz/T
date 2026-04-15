@@ -338,3 +338,18 @@ model ListingRating {
   @@unique([userId, listingId])
   @@index([listingId])
 }
+
+model News {
+  id         String   @id @default(cuid())
+  titleUz    String
+  titleRu    String
+  excerptUz  String
+  excerptRu  String
+  contentUz  String?
+  contentRu  String?
+  imageUrl   String
+  categoryUz String
+  categoryRu String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}

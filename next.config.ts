@@ -41,10 +41,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/home:path*',
-        destination: '/',
-      },
-      {
         source: '/test',
         destination: '/',
       },

@@ -28,6 +28,7 @@ import {
   toggleUserBlockAction,
   changeUserPlanAction
 } from "@/server/actions/admin.action";
+import { deleteNewsAction } from "@/server/actions/news.action";
 import { Loader2, ShieldCheck as ShieldCheckIcon, ShieldAlert, ChevronDown } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -50,11 +51,13 @@ interface AdminClientProps {
     total: number;
     pages: number;
   };
+  newsData: any[];
 }
 
-export default function AdminClient({ stats, listingsData, usersData }: AdminClientProps) {
+export default function AdminClient({ stats, listingsData, usersData, newsData }: AdminClientProps) {
   const { listings } = listingsData;
   const { users } = usersData;
+  const news = newsData || [];
   const [activeTab, setActiveTab] = useState("listings");
   const searchParams = useSearchParams();
   const [reports, setReports] = useState<any[]>([]);
@@ -189,6 +192,7 @@ export default function AdminClient({ stats, listingsData, usersData }: AdminCli
         <TabsList className="bg-muted/30 p-1.5 rounded-2xl border border-border/50 h-auto gap-1 mb-8">
           <TabsTrigger value="listings" className="rounded-xl font-bold py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">E'lonlar</TabsTrigger>
           <TabsTrigger value="users" className="rounded-xl font-bold py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">Foydalanuvchilar</TabsTrigger>
+          <TabsTrigger value="news" className="rounded-xl font-bold py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all">Yangiliklar</TabsTrigger>
           <TabsTrigger value="reports" className="rounded-xl font-bold py-2.5 px-6 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all flex items-center gap-2">
             Hisobotlar
             {reports.length > 0 && (
@@ -560,6 +564,64 @@ export default function AdminClient({ stats, listingsData, usersData }: AdminCli
                   {reports.length === 0 && !isLoadingReports && (
                      <tr>
                        <td colSpan={3} className="px-8 py-12 text-center text-muted-foreground font-bold italic">Yangi hisobotlar mavjud emas.</td>
+                     </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="news" className="space-y-4 focus-visible:outline-none">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => router.push('/admin/news/new')} className="rounded-xl font-bold bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform">
+              Yangi yangilik qo'shish
+            </Button>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-border/50 rounded-[32px] overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-[10px] text-muted-foreground uppercase bg-muted/20 border-b border-border/50">
+                  <tr>
+                    <th className="px-8 py-5 font-black tracking-widest text-left">Rasm</th>
+                    <th className="px-8 py-5 font-black tracking-widest text-left">Sarlavha (UZ)</th>
+                    <th className="px-8 py-5 font-black tracking-widest text-left">Rukn</th>
+                    <th className="px-8 py-5 font-black tracking-widest text-center">Sana</th>
+                    <th className="px-8 py-5 font-black tracking-widest text-right">Amallar</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/40">
+                  {news.map((n: any) => (
+                    <tr key={n.id} className="hover:bg-primary/[0.02] transition-colors group/row">
+                      <td className="px-8 py-5">
+                        <div className="h-12 w-16 relative rounded-xl overflow-hidden shrink-0 border border-border/50 shadow-sm transition-transform duration-500">
+                          <Image src={n.imageUrl} alt={n.titleUz} fill className="object-cover" />
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 font-bold line-clamp-2">{n.titleUz}</td>
+                      <td className="px-8 py-5 font-medium">{n.categoryUz}</td>
+                      <td className="px-8 py-5 text-center text-muted-foreground text-xs">{new Date(n.createdAt).toLocaleDateString("uz-UZ")}</td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button 
+                            variant="ghost" size="icon" 
+                            onClick={async () => {
+                              if(confirm('Ochirishni tasdiqlaysizmi?')) {
+                                await deleteNewsAction(n.id);
+                                router.refresh();
+                              }
+                            }}
+                            className="h-10 w-10 p-0 rounded-xl text-destructive hover:bg-destructive/10 active:scale-90 transition-all"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {news.length === 0 && (
+                     <tr>
+                       <td colSpan={5} className="px-8 py-12 text-center text-muted-foreground font-bold italic">Yangiliklar mavjud emas.</td>
                      </tr>
                   )}
                 </tbody>

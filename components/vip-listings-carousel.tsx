@@ -72,6 +72,15 @@ export default function VipListingsCarousel({ listings }: VipListingsCarouselPro
              const userAvatar = listing.user?.imageUrl || "/default-avatar.png";
              const userName = listing.user?.name || listing.phone || "";
 
+             // Deterministic rating to avoid hydration mismatch
+             const getRating = (id: string) => {
+               let hash = 0;
+               for (let i = 0; i < id.length; i++) {
+                 hash = id.charCodeAt(i) + ((hash << 5) - hash);
+               }
+               return (4.5 + (Math.abs(hash) % 4) / 10).toFixed(1);
+             };
+
              return (
                <Link 
                  key={listing.id} 
@@ -130,7 +139,7 @@ export default function VipListingsCarousel({ listings }: VipListingsCarouselPro
                      </h3>
                      <div className="flex shrink-0 items-center gap-1 text-[14px]">
                        <span className="text-amber-500 font-bold">★</span>
-                       <span className="font-semibold text-foreground">{(4.5 + Math.random() * 0.5).toFixed(2)}</span>
+                       <span className="font-semibold text-foreground">{listing.ratingAverage || getRating(listing.id)}</span>
                      </div>
                    </div>
                    <p className="text-muted-foreground text-[14px] font-normal truncate">

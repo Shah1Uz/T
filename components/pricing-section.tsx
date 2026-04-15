@@ -1,11 +1,11 @@
 "use client";
 
 import { useLocale } from "@/context/locale-context";
-import { Check, Sparkles, ShieldCheck, Zap, Info } from "lucide-react";
+import { Check, Sparkles, ShieldCheck, Zap, Info, History, CheckCircle2, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createPaymentAction, activateFreeTrialAction } from "@/server/actions/subscription.action";
+import { createPaymentAction, activateFreeTrialAction, getLatestTransactionAction } from "@/server/actions/subscription.action";
 import { toast } from "sonner";
 import { useAuth, SignInButton } from "@clerk/nextjs";
 import {
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
  
 export default function PricingSection({ currentPlan }: { currentPlan?: string }) {
   const { t, locale } = useLocale();
@@ -27,13 +28,24 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
   const [trialUsed, setTrialUsed] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [latestTransaction, setLatestTransaction] = useState<any>(null);
   const [isYearly, setIsYearly] = useState(false);
 
   useEffect(() => {
     const status = searchParams.get("payment_status");
     if (status) {
       if (status === "0" || status === "success") {
-        toast.success(locale === "uz" ? "To'lov muvaffaqiyatli amalga oshirildi!" : "Оплата прошла успешно!");
+        const fetchLatestTx = async () => {
+          const res = await getLatestTransactionAction();
+          if (res.success && res.transaction) {
+            setLatestTransaction(res.transaction);
+            setIsReportModalOpen(true);
+          } else {
+            toast.success(locale === "uz" ? "To'lov muvaffaqiyatli amalga oshirildi!" : "Оплата прошла успешно!");
+          }
+        };
+        fetchLatestTx();
       } else if (status === "-21") {
         toast.error(locale === "uz" ? "Hisobingizda mablag' yetarli emas." : "Недостаточно средств на счету.");
       } else if (status === "-1" || status === "error") {
@@ -103,7 +115,17 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
       setIsPaymentModalOpen(false);
     }
   };
- 
+  
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat(locale === "uz" ? "uz-UZ" : "ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(date));
+  };
+
   const plans = [
     {
       id: "FREE",
@@ -157,11 +179,23 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
         transition={{ duration: 0.6 }}
         className="text-center mb-16"
       >
-        <div className="flex justify-center mb-6">
-           <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg shadow-blue-600/20">
-             UySell {locale === "uz" ? "Ta'riflari" : "Тарифы"}
-           </span>
+        <div className="flex flex-col items-center gap-6 mb-6">
+          <div className="flex justify-center">
+            <span className="bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg shadow-blue-600/20">
+              UySell {locale === "uz" ? "Ta'riflari" : "Тарифы"}
+            </span>
+          </div>
+          
+          {userId && (
+            <Link href={`/pricing/history${locale !== 'uz' ? `?lang=${locale}` : ''}`}>
+              <Button variant="outline" className="h-10 px-5 rounded-xl font-bold border-slate-200 bg-white/50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-sm flex items-center gap-2 group">
+                <History className="h-4 w-4 text-primary group-hover:rotate-[-45deg] transition-transform" />
+                {t("pricing.view_history")}
+              </Button>
+            </Link>
+          )}
         </div>
+
         <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-slate-900 uppercase">
           {t("pricing.title")}
         </h2>
@@ -365,6 +399,82 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
                <div className="h-6 w-10 bg-neutral-900 rounded-sm" />
                <div className="h-6 w-10 bg-neutral-900 rounded-sm" />
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment Success Report Modal */}
+      <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-[48px] p-0 border-none bg-white dark:bg-slate-900 overflow-hidden shadow-2xl">
+          <div className="relative p-10 pt-12">
+            <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
+            
+            <div className="relative z-10 text-center mb-10">
+              <div className="h-20 w-20 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/20 animate-bounce-subtle">
+                <CheckCircle2 className="h-10 w-10 text-white" />
+              </div>
+              <DialogTitle className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase mb-2">
+                {t("pricing.payment_report")}
+              </DialogTitle>
+              <DialogDescription className="text-emerald-600 font-bold uppercase tracking-widest text-xs">
+                {t("pricing.success_message")}
+              </DialogDescription>
+            </div>
+
+            {latestTransaction && (
+              <div className="space-y-6">
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-800">
+                   <div className="grid grid-cols-2 gap-y-6">
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("pricing.active_plan")}</p>
+                        <div className="flex items-center gap-2">
+                           {latestTransaction.plan === 'VIP' ? <Sparkles className="h-4 w-4 text-purple-600" /> : latestTransaction.plan === 'STANDART' ? <ShieldCheck className="h-4 w-4 text-blue-600" /> : <Zap className="h-4 w-4 text-amber-500" />}
+                           <span className="font-black text-slate-900 dark:text-white uppercase">{latestTransaction.plan}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("pricing.payment_amount")}</p>
+                        <p className="font-black text-slate-900 dark:text-white">{latestTransaction.amount.toLocaleString()} <span className="text-xs">{t("pricing.uzs")}</span></p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("pricing.payment_time")}</p>
+                        <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
+                           <Clock className="h-4 w-4 text-slate-400" />
+                           {formatDate(latestTransaction.createdAt)}
+                        </div>
+                      </div>
+                      <div>
+                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{t("pricing.status")}</p>
+                         <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                           Success
+                         </span>
+                      </div>
+                   </div>
+
+                   <div className="mt-6 pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t("pricing.transaction_id")}</p>
+                      <p className="font-mono text-[11px] text-slate-500 bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-800 select-all">
+                        {latestTransaction.providerTransId || latestTransaction.id}
+                      </p>
+                   </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    className="flex-1 h-14 rounded-2xl font-black uppercase text-xs tracking-widest bg-slate-900 text-white hover:bg-black"
+                    onClick={() => setIsReportModalOpen(false)}
+                  >
+                    OK
+                  </Button>
+                  <Link href={`/pricing/history${locale !== 'uz' ? `?lang=${locale}` : ''}`} className="flex-1">
+                    <Button variant="outline" className="w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest border-slate-200 hover:bg-slate-50 flex items-center gap-2">
+                       {t("pricing.history").split(' ')[0]}
+                       <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

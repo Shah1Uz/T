@@ -8,6 +8,7 @@ import { SignInButton, useUser } from "@clerk/nextjs";
 import ListingCard from "@/components/listing-card";
 import SquareListingCard from "@/components/square-listing-card";
 import SearchFilters from "@/components/search-filters";
+import { toast } from "sonner";
 import { useLocale } from "@/context/locale-context";
 import VipListingsCarousel from "@/components/vip-listings-carousel";
 
@@ -27,7 +28,9 @@ export default function HomeListingsClient({ listings, userId, locations }: Home
   // Request location on mount or when mode is toggled for the first time
   const handleLocationRequest = () => {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported");
+      const msg = "Geolocation is not supported by this browser";
+      setLocationError(msg);
+      toast.error(msg);
       return;
     }
 
@@ -41,8 +44,30 @@ export default function HomeListingsClient({ listings, userId, locations }: Home
         setLocationError(null);
       },
       (error) => {
-        console.error("Location error:", error);
-        setLocationError("Location permission denied");
+        let errorMessage = "Location permission denied";
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Joylashuvni aniqlashga ruxsat berilmadi";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Joylashuv ma'lumotlari mavjud emas";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Joylashuvni aniqlashda kutish vaqti tugadi";
+            break;
+          default:
+            errorMessage = "Joylashuvni aniqlashda noma'lum xato yuz berdi";
+            break;
+        }
+
+        console.error("Location error:", {
+          code: error.code,
+          message: error.message
+        });
+        
+        setLocationError(errorMessage);
+        toast.error(errorMessage);
         setIsNearMeMode(false);
       }
     );

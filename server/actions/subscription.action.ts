@@ -102,3 +102,20 @@ export async function activateFreeTrialAction(plan: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function getLatestTransactionAction() {
+  try {
+    const { userId } = await auth();
+    if (!userId) return { success: false, error: "Unauthorized" };
+
+    const transaction = await prisma.transaction.findFirst({
+      where: { userId, status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, transaction };
+  } catch (error: any) {
+    console.error("Fetch transaction error:", error);
+    return { success: false, error: error.message };
+  }
+}

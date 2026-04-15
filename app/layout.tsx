@@ -12,6 +12,8 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
+import WebsiteTour from "@/components/website-tour";
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,7 +69,10 @@ export default async function RootLayout({
                 enableSystem
                 disableTransitionOnChange
               >
-                <main className="flex min-h-screen items-center justify-center">{children}</main>
+                <main className="flex min-h-screen items-center justify-center">
+                  <WebsiteTour />
+                  {children}
+                </main>
                 <Toaster position="top-center" richColors />
               </ThemeProvider>
             </body>
@@ -84,6 +89,7 @@ export default async function RootLayout({
           <head>
             {/* Blocking script to suppress extension-injected hydration mismatches before React loads */}
             <script
+              suppressHydrationWarning
               dangerouslySetInnerHTML={{
                 __html: `
                   (function() {
@@ -138,6 +144,7 @@ export default async function RootLayout({
             suppressHydrationWarning
             className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative`}
           >
+            <NextTopLoader color="#FF385C" showSpinner={false} shadow="0 0 10px #FF385C,0 0 5px #FF385C" />
             <ThemeProvider
               attribute="class"
               defaultTheme="light"
@@ -146,6 +153,7 @@ export default async function RootLayout({
             >
               <StyledJsxRegistry>
                 <div suppressHydrationWarning className="flex min-h-screen flex-col relative z-10">
+                  <WebsiteTour />
                   <Navbar />
                   <AuthSync />
                   <Toaster position="top-center" richColors />

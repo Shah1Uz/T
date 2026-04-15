@@ -24,6 +24,7 @@ export default function OnboardingPage() {
       // Since publicMetadata updates may take a moment to sync down to the client session,
       // we can explicitly reload.
       await user?.reload();
+      localStorage.removeItem("hasSeenWebsiteTour"); // Trigger tour after signup
       router.push("/");
       router.refresh();
     } else {

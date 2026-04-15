@@ -25,7 +25,9 @@ export default async function HomePage(props: { searchParams?: Promise<{ [key: s
   const { stories } = await getActiveStoriesAction();
 
   return (
-    <div className="flex flex-col min-h-screen pt-4">
+    <div className="flex flex-col min-h-screen pt-4 gap-6">
+      <StoriesBar stories={stories || []} />
+      <BannerCarousel banners={activeBanners || []} />
       <HomeListingsClient listings={listings} userId={userId} locations={locations} />
     </div>
   );

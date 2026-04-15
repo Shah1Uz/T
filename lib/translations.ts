@@ -268,8 +268,18 @@ export const translations: Record<string, any> = {
         highlight: "E'lonni ajratib ko'rsatish",
         stories_daily: "Kuniga 1 ta Story",
         video_ads: "Video e'lonlar",
-        social_media: "Ijtimoiy tarmoqlarda reklama",
-      }
+      social_media: "Ijtimoiy tarmoqlarda reklama",
+      },
+      history: "To'lovlar tarixi",
+      transaction_id: "Tranzaksiya ID",
+      payment_time: "To'lov vaqti",
+      payment_amount: "To'lov summasi",
+      status: "Holati",
+      active_plan: "Aktiv ta'rif",
+      expires_at: "Amal qilish muddati",
+      view_history: "To'lovlar tarixini ko'rish",
+      payment_report: "To'lov hisoboti",
+      success_message: "To'lov muvaffaqiyatli amalga oshirildi!",
     }
   },
   ru: {
@@ -541,7 +551,17 @@ export const translations: Record<string, any> = {
         stories_daily: "1 Story в день",
         video_ads: "Видео объявления",
         social_media: "Реклама в соцсетях",
-      }
+      },
+      history: "История платежей",
+      transaction_id: "ID транзакции",
+      payment_time: "Время оплаты",
+      payment_amount: "Сумма оплаты",
+      status: "Статус",
+      active_plan: "Активный тариф",
+      expires_at: "Срок действия",
+      view_history: "Посмотреть историю платежей",
+      payment_report: "Отчет об оплате",
+      success_message: "Оплата прошла успешно!",
     }
   }
 };

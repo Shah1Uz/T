@@ -71,7 +71,7 @@ export default function Hero() {
         </div>
 
         {/* Search Bar */}
-        <div className="max-w-3xl 3xl:max-w-6xl mx-auto">
+        <div id="tour-hero-search" className="max-w-3xl 3xl:max-w-6xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-0 bg-white border border-black/10 rounded-full p-1 shadow-[0_16px_32px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
             <div className="flex-1 flex items-center gap-3 px-6 3xl:px-12 py-3 3xl:py-6 hover:bg-slate-50 transition-all rounded-l-full">
               <div className="flex flex-col">

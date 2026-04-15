@@ -20,6 +20,7 @@ import {
   Bell, 
   BookOpen, 
   ChevronDown, 
+  ChevronRight,
   Rocket, 
   Info, 
   Star,
@@ -57,7 +58,7 @@ export default function Navbar() {
         <div suppressHydrationWarning className="container flex h-[68px] 3xl:h-[100px] items-center justify-between">
           
           <div className="flex items-center gap-8 3xl:gap-16">
-            <Link href="/" className="relative flex items-center shrink-0 group outline-none h-full">
+            <Link id="tour-logo" href="/" className="relative flex items-center shrink-0 group outline-none h-full">
               <div className="absolute left-0 top-1/2 -translate-y-1/2 h-32 w-32 3xl:h-44 3xl:w-44 z-10 group-hover:scale-105 transition-transform duration-300">
                 <img 
                   src="/logo.png" 
@@ -70,7 +71,7 @@ export default function Navbar() {
 
             <nav className="hidden lg:flex items-center gap-1">
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger id="tour-search">
                   <div className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer select-none hover:bg-primary/5 text-foreground hover:text-primary group">
                     <Search className="h-4 w-4 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all text-primary" />
                     {locale === "uz" ? "Qidiruv" : "Поиск"}
@@ -106,7 +107,7 @@ export default function Navbar() {
               </DropdownMenu>
 
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger id="tour-services">
                   <div className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer select-none hover:bg-primary/5 text-foreground hover:text-primary group">
                     <Rocket className="h-4 w-4 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all text-primary" />
                     {locale === "uz" ? "Xizmatlar" : "Сервисы"}
@@ -134,7 +135,7 @@ export default function Navbar() {
               </DropdownMenu>
 
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger id="tour-info">
                   <div className="h-10 px-4 rounded-xl font-bold flex items-center gap-2 transition-all cursor-pointer select-none hover:bg-primary/5 text-foreground hover:text-primary group">
                     <HelpCircle className="h-4 w-4 opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all text-primary" />
                     {locale === "uz" ? "Ma'lumot" : "Информация"}
@@ -143,11 +144,11 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[200px] p-2 mt-2 rounded-2xl shadow-2xl border-border/50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200">
                   <DropdownMenuItem>
-                    <Link href="/jurnal" className="flex items-center gap-2.5 p-3 rounded-xl cursor-pointer w-full text-foreground hover:bg-primary/5 hover:text-primary transition-colors">
+                    <Link href="/news" className="flex items-center gap-2.5 p-3 rounded-xl cursor-pointer w-full text-foreground hover:bg-primary/5 hover:text-primary transition-colors">
                       <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                         <BookOpen className="h-4 w-4" />
                       </div>
-                      <span className="font-semibold">{t("nav.journal")}</span>
+                      <span className="font-semibold">Uysell News</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
@@ -166,7 +167,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             <div className="hidden lg:flex items-center gap-3 mr-1">
               {userId && (
-                <Button asChild className="h-10 px-5 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 mr-2">
+                <Button id="tour-add-listing" asChild className="h-10 px-5 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95 mr-2">
                   <Link href="/listings/create" className="flex items-center gap-2">
                     <PlusSquare className="h-5 w-5" />
                     {t("nav.add_listing")}
@@ -174,6 +175,7 @@ export default function Navbar() {
                 </Button>
               )}
               <button 
+                id="tour-language"
                 onClick={() => setLocale(locale === "uz" ? "ru" : "uz")}
                 className={cn(
                   "h-10 px-4 rounded-xl text-xs font-black transition-all border shrink-0 bg-muted/20 border-border/40 hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-95 shadow-sm group",
@@ -183,8 +185,8 @@ export default function Navbar() {
                 <span className="mx-1 opacity-20 group-hover:opacity-40 transition-opacity">|</span>
                 <span className={cn(locale === "ru" ? "text-primary" : "text-muted-foreground")}>RU</span>
               </button>
-              <ThemeToggle />
-              <NotificationBell />
+              <div id="tour-theme"><ThemeToggle /></div>
+              <div id="tour-notifications"><NotificationBell /></div>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 mr-1">
@@ -207,7 +209,7 @@ export default function Navbar() {
             {userId ? (
               <div className="flex items-center gap-3">
                 <DropdownMenu>
-                  <DropdownMenuTrigger>
+                  <DropdownMenuTrigger id="tour-dashboard">
                     <div className="h-10 w-10 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary flex items-center justify-center cursor-pointer transition-all border border-border/40 relative group">
                       <LayoutDashboard className="h-5 w-5" />
                       {isAdmin && <div className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-primary border-2 border-white dark:border-slate-950 rounded-full shadow-sm" />}
@@ -326,6 +328,10 @@ export default function Navbar() {
                       <span className="text-primary">{locale === "uz" ? "Chat bo'limi" : "Раздел чата"}</span>
                     </div>
                     <ChevronDown className="h-4 w-4 -rotate-90 text-primary" />
+                  </Link>
+                  <Link href="/news" className="flex items-center justify-between font-bold text-lg hover:text-primary transition-colors">
+                    Uysell News
+                    <ChevronRight className="h-5 w-5 opacity-50" />
                   </Link>
                   <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-between p-4 rounded-xl hover:bg-primary/5 font-bold group">
                     <div className="flex items-center gap-3">

@@ -1,4 +1,5 @@
 import { adminService } from "@/server/services/admin.service";
+import { newsService } from "@/server/services/news.service";
 import AdminClient from "./admin-client";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +16,12 @@ export default async function AdminDashboardPage({
   const stats = await adminService.getDashboardStats();
   const listingsData = await adminService.getAllListings(lPage, 20);
   const usersData = await adminService.getAllUsers(uPage, 20);
+  const newsData = await newsService.getAll();
 
   return <AdminClient 
     stats={stats} 
     listingsData={listingsData} 
     usersData={usersData} 
+    newsData={newsData}
   />;
 }
