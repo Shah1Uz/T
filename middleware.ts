@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher, clerkClient } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -23,23 +23,8 @@ export const proxy = clerkMiddleware(async (auth, req) => {
     if (!userId) return session.redirectToSignIn();
   }
 
-  // Real-time block check using Clerk API
-  if (userId && !req.nextUrl.pathname.startsWith('/blocked') && !req.nextUrl.pathname.startsWith('/api')) {
-    try {
-      // In Next.js Middleware (Edge Runtime), clerkClient() is available but should be used sparingly.
-      // We check if the user is blocked from the publicMetadata.
-      const client = await clerkClient();
-      const user = await client.users.getUser(userId);
-      
-      if (user?.publicMetadata?.isBlocked === true) {
-        return NextResponse.redirect(new URL('/blocked', req.url));
-      }
-    } catch (error) {
-      // If Clerk API fails, we log it but allow the request to proceed to avoid 500 errors
-      // and ensure the app remains functional.
-      console.error("Clerk API error in middleware:", error);
-    }
-  }
+  // Note: Blocked user check is now handled in RootLayout using Prisma 
+  // to avoid expensive Clerk API calls in the Edge runtime.
 
   // Set pathname header for root layout fallback
   const requestHeaders = new Headers(req.headers);
