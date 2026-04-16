@@ -7,11 +7,21 @@ export async function uploadFile(file: File): Promise<string> {
   const buffer = Buffer.from(bytes);
 
   const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  
+  console.log("Upload Debug:", {
+    hasSupabase,
+    url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    key: !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    fileName: file.name,
+    fileType: file.type
+  });
 
   if (hasSupabase) {
     const bucket = "images";
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
     const filePath = `salomuy/${fileName}`;
+
+    console.log("Uploading to Supabase:", { bucket, filePath });
 
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -22,7 +32,7 @@ export async function uploadFile(file: File): Promise<string> {
       });
 
     if (error) {
-      console.error("Supabase upload error:", error);
+      console.error("Supabase upload error details:", error);
       throw new Error(`Upload failed: ${error.message}`);
     }
 
@@ -30,8 +40,10 @@ export async function uploadFile(file: File): Promise<string> {
       .from(bucket)
       .getPublicUrl(filePath);
 
+    console.log("Upload Success! Public URL:", publicUrl);
     return publicUrl;
   } else {
+    console.log("Falling back to local storage (Supabase config missing)");
     // Local storage fallback for development
     const uploadDir = join(process.cwd(), "public/uploads");
     try { await mkdir(uploadDir, { recursive: true }); } catch (e) {}
