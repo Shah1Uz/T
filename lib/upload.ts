@@ -18,6 +18,8 @@ export async function uploadFile(file: File): Promise<string> {
     fileType: file.type
   });
 
+  const isVercel = !!process.env.VERCEL;
+
   if (hasSupabase) {
     const bucket = "images";
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
@@ -47,7 +49,7 @@ export async function uploadFile(file: File): Promise<string> {
        
        if (rootError) {
          console.error("Supabase upload error details:", rootError);
-         throw new Error(`Upload failed: ${rootError.message}`);
+         throw new Error(`Supabase Upload failed: ${rootError.message}. Please check if the 'images' bucket exists and has correct policies.`);
        }
        
        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(rootPath);
@@ -61,9 +63,13 @@ export async function uploadFile(file: File): Promise<string> {
     console.log("Upload Success! Public URL:", publicUrl);
     return publicUrl;
   } else {
+    if (isVercel) {
+      throw new Error("Supabase sozlamalari (URL/Key) Vercel-da topilmadi. Iltimos, Vercel Dashboard-da Environment Variables qismini tekshiring.");
+    }
+    
     console.log("Falling back to local storage (Supabase config missing)");
     // Local storage fallback for development
-    const uploadDir = join(process.cwd(), "public/uploads");
+    const uploadDir = join(process.cwd(), "public", "uploads");
     try { await mkdir(uploadDir, { recursive: true }); } catch (e) {}
     
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
