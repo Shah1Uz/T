@@ -42,6 +42,46 @@ export default function CreateListingPage() {
     } as any,
   });
 
+  // Uzbekistan Region and District Coordinates for Map Navigation
+  const LOCATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
+    // Regions
+    'Toshkent shahri': { lat: 41.2995, lng: 69.2401 },
+    'Toshkent viloyati': { lat: 41.2213, lng: 69.4593 },
+    'Andijon viloyati': { lat: 40.7833, lng: 72.3333 },
+    'Buxoro viloyati': { lat: 39.7747, lng: 64.4286 },
+    'Fargʻona viloyati': { lat: 40.3833, lng: 71.7833 },
+    'Jizzax viloyati': { lat: 40.1158, lng: 67.8422 },
+    'Xorazm viloyati': { lat: 41.3783, lng: 60.3639 },
+    'Namangan viloyati': { lat: 41.0000, lng: 71.6667 },
+    'Navoiy viloyati': { lat: 40.1039, lng: 65.3739 },
+    'Qashqadaryo viloyati': { lat: 38.8611, lng: 65.7833 },
+    'Samarqand viloyati': { lat: 39.6270, lng: 66.9750 },
+    'Sirdaryo viloyati': { lat: 40.8373, lng: 68.6617 },
+    'Surxondaryo viloyati': { lat: 37.9406, lng: 67.2481 },
+    'Qoraqalpogʻiston Respublikasi': { lat: 42.4533, lng: 59.6103 },
+    // Major Districts (Tashkent)
+    'Yunusobod tumani': { lat: 41.3645, lng: 69.2855 },
+    'Chilonzor tumani': { lat: 41.2725, lng: 69.2045 },
+    'Mirzo Ulugʻbek tumani': { lat: 41.3265, lng: 69.3285 },
+    'Shayxontohur tumani': { lat: 41.3215, lng: 69.2315 },
+    'Olmazor tumani': { lat: 41.3455, lng: 69.2155 },
+    'Mirobod tumani': { lat: 41.2915, lng: 69.2795 },
+    'Yakkasaroy tumani': { lat: 41.2825, lng: 69.2545 },
+    'Uchtepa tumani': { lat: 41.2855, lng: 69.1755 },
+    'Yashnobod tumani': { lat: 41.3005, lng: 69.3255 },
+    'Sergeli tumani': { lat: 41.2095, lng: 69.2235 },
+    'Bektemir tumani': { lat: 41.2335, lng: 69.3455 },
+    'Yangihayot tumani': { lat: 41.1955, lng: 69.2085 }
+  };
+
+  const updateMapPosition = (name: string) => {
+    const coords = LOCATION_COORDINATES[name];
+    if (coords) {
+      setValue("latitude", coords.lat);
+      setValue("longitude", coords.lng);
+    }
+  };
+
   useEffect(() => {
     fetch("/api/locations").then(res => res.json()).then(setLocations);
   }, []);
@@ -274,6 +314,9 @@ export default function CreateListingPage() {
                       onChange={(e) => {
                         const region = locations.find(l => l.id === e.target.value) || null;
                         setSelectedRegion(region);
+                        if (region) {
+                          updateMapPosition(region.name);
+                        }
                         // If region has no children, use region itself as locationId
                         if (region && (!region.children || region.children.length === 0)) {
                           setValue("locationId", region.id);
@@ -298,7 +341,16 @@ export default function CreateListingPage() {
                      <select
                        {...register("locationId")}
                        className="w-full h-12 border rounded-lg px-3 bg-background focus:ring-1 focus:ring-primary outline-none transition-all text-base appearance-none cursor-pointer"
-                       onChange={(e) => setValue("locationId", e.target.value)}
+                       onChange={(e) => {
+                         const val = e.target.value;
+                         setValue("locationId", val);
+                         if (selectedRegion && selectedRegion.children) {
+                           const district = selectedRegion.children.find((c: any) => c.id === val);
+                           if (district) {
+                             updateMapPosition(district.name);
+                           }
+                         }
+                       }}
                      >
                        <option value="">
                          {t("create.district_placeholder") || (t("nav.login") === "Kirish" ? "Tumanni tanlang" : "Выберите район")}
