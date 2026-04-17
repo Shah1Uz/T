@@ -12,7 +12,9 @@ export const listingService = {
       data: {
         ...data,
         images: {
-          create: imageUrls.map(url => ({ url }))
+          create: imageUrls
+            .filter(url => typeof url === 'string' && url.trim() !== '')
+            .map(url => ({ url }))
         }
       }
     });

@@ -45,7 +45,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "At least one image is required" }, { status: 400 });
     }
 
-    const listing = await listingService.create({ ...validation.data, userId }, images);
+    // Ensure all images are valid strings
+    const validImages = images.filter((img): img is string => typeof img === 'string' && img.trim() !== '');
+    if (validImages.length === 0) {
+      return NextResponse.json({ error: "No valid image URLs provided" }, { status: 400 });
+    }
+
+    const listing = await listingService.create({ ...validation.data, userId }, validImages);
     return NextResponse.json(listing);
   } catch (error: any) {
     console.error("CREATE LISTING ERROR:", error);

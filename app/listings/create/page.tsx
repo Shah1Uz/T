@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Upload, X, Navigation } from "lucide-react";
 import LocationPicker from "@/components/location-picker";
 import { useLocale } from "@/context/locale-context";
+import { toast } from "sonner";
 
 import { listingSchema } from "@/lib/validations";
 
@@ -59,11 +60,13 @@ export default function CreateListingPage() {
       });
       if (res.ok) {
         const listing = await res.json();
+        toast.success(t("home.created") || "E'lon muvaffaqiyatli yaratildi!");
         router.push(`/listings/${listing.id}`);
       } else {
-        const errDetails = await res.text();
-        console.error("Server Error:", errDetails);
-        alert("Server xatosi: " + errDetails);
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.details || errorData.error || "Server xatosi";
+        console.error("Server Error:", errorMessage);
+        alert("Server xatosi: " + errorMessage);
       }
     } catch (e) {
       console.error(e);
@@ -88,8 +91,22 @@ export default function CreateListingPage() {
 
     try {
       const res = await fetch("/api/upload", { method: "POST", body: formData });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Rasm yuklashda xatolik");
+      }
+
       const data = await res.json();
-      setImages([...images, data.url]);
+      if (data.url) {
+        setImages([...images, data.url]);
+        toast.success(t("create.upload_success") || "Rasm yuklandi");
+      } else {
+        throw new Error("Rasm manzili (URL) topilmadi");
+      }
+    } catch (error: any) {
+      console.error("Upload Error:", error);
+      toast.error(error.message || "Rasm yuklashda xatolik yuz berdi");
     } finally {
       setIsUploading(false);
     }
