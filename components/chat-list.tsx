@@ -8,14 +8,37 @@ import Link from "next/link";
 import { useLocale } from "@/context/locale-context";
 import { cn } from "@/lib/utils";
 
+import { useState, useEffect } from "react";
+
 interface ChatListProps {
   chats: any[];
   activeChatId?: string | null;
 }
 
-export function ChatList({ chats, activeChatId }: ChatListProps) {
+export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
   const { user } = useUser();
   const { t, locale } = useLocale();
+  const [chats, setChats] = useState(initialChats);
+
+  useEffect(() => {
+    setChats(initialChats);
+  }, [initialChats]);
+
+  useEffect(() => {
+    const handleChatUpdate = (event: any) => {
+      const { detail } = event;
+      console.log("ChatList received update:", detail);
+      
+      // Refresh chats from API to get the correct order and unread count
+      fetch("/api/chat")
+        .then(res => res.json())
+        .then(data => setChats(data))
+        .catch(err => console.error("Error refreshing chats:", err));
+    };
+
+    window.addEventListener("chat-updated", handleChatUpdate);
+    return () => window.removeEventListener("chat-updated", handleChatUpdate);
+  }, []);
 
   return (
     <div className="flex flex-col h-full bg-muted/30">

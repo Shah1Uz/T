@@ -62,9 +62,25 @@ export async function POST(
     });
     console.log("Message created in DB:", message.id);
 
+    // Fetch participants to notify their sidebars
+    const participants = await prisma.chatParticipant.findMany({
+      where: { chatId: id },
+      select: { userId: true }
+    });
+
     try {
       if (process.env.PUSHER_APP_ID && process.env.NEXT_PUBLIC_PUSHER_KEY) {
+        // Update the current chat window
         await pusherServer.trigger(`chat-${id}`, "new-message", message);
+        
+        // Update the sidebar/notifications for all participants
+        for (const p of participants) {
+          await pusherServer.trigger(`user-${p.userId}`, "chat-update", {
+            chatId: id,
+            message,
+            type: "new-message"
+          });
+        }
       }
     } catch (e) {
       console.log("Pusher trigger skipped/failed. Real-time sync may not work.", e);

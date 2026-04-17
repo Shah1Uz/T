@@ -14,6 +14,7 @@ import prisma from "@/lib/prisma";
 import { headers } from "next/headers";
 import WebsiteTour from "@/components/website-tour";
 import NextTopLoader from "nextjs-toploader";
+import PusherListener from "@/components/pusher-listener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -156,6 +157,7 @@ export default async function RootLayout({
                   <WebsiteTour />
                   <Navbar />
                   <AuthSync />
+                  <PusherListener />
                   <Toaster position="top-center" richColors />
                   <main className="flex-1">{children}</main>
                 </div>

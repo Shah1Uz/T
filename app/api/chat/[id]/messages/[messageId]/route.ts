@@ -34,7 +34,22 @@ export async function DELETE(
     // Notify via Pusher
     try {
       if (process.env.PUSHER_APP_ID && process.env.NEXT_PUBLIC_PUSHER_KEY) {
+        // Update the current chat window
         await pusherServer.trigger(`chat-${id}`, "delete-message", { messageId });
+        
+        // Notify participants to update their sidebars
+        const participants = await prisma.chatParticipant.findMany({
+          where: { chatId: id },
+          select: { userId: true }
+        });
+
+        for (const p of participants) {
+          await pusherServer.trigger(`user-${p.userId}`, "chat-update", {
+            chatId: id,
+            messageId,
+            type: "delete-message"
+          });
+        }
       }
     } catch (e) {
       console.log("Pusher delete trigger skipped.", e);

@@ -36,13 +36,28 @@ export async function GET() {
           },
           take: 1,
         },
+        _count: {
+          select: {
+            messages: {
+              where: {
+                seen: false,
+                senderId: { not: userId }
+              }
+            }
+          }
+        }
       },
       orderBy: {
         updatedAt: "desc",
       },
     });
 
-    return NextResponse.json(chats);
+    const chatsWithUnreadCount = chats.map((chat: any) => ({
+      ...chat,
+      unreadCount: chat._count.messages
+    }));
+
+    return NextResponse.json(chatsWithUnreadCount);
   } catch (error) {
     console.error("Error fetching chats:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
