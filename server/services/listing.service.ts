@@ -147,9 +147,9 @@ export const listingService = {
       },
       orderBy: [
         { user: { planPriority: "desc" } },
+        { createdAt: "desc" },
         { ratingAverage: "desc" },
-        { ratingCount: "desc" },
-        { createdAt: "desc" }
+        { ratingCount: "desc" }
       ],
       skip: (page - 1) * limit,
       take: limit,

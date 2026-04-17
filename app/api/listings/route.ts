@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { listingService } from "@/server/services/listing.service";
+import { pusherServer } from "@/lib/pusher-server";
+import { uploadFile } from "@/lib/upload";
+import { revalidatePath } from "next/cache";
 import { syncUser } from "@/lib/auth";
 import { listingSchema } from "@/lib/validations";
 
@@ -52,6 +55,12 @@ export async function POST(req: Request) {
     }
 
     const listing = await listingService.create({ ...validation.data, userId }, validImages);
+    
+    // Clear Next.js cache to show new listing immediately
+    revalidatePath("/");
+    revalidatePath("/home");
+    revalidatePath("/listings");
+    
     return NextResponse.json(listing);
   } catch (error: any) {
     console.error("CREATE LISTING ERROR:", error);
