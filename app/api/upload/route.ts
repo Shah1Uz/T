@@ -12,8 +12,11 @@ export async function POST(req: Request) {
 
     const url = await uploadFile(file);
     return NextResponse.json({ url });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload Error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || "Upload failed",
+      details: error.toString() 
+    }, { status: 500 });
   }
 }

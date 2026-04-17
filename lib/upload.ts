@@ -28,14 +28,30 @@ export async function uploadFile(file: File): Promise<string> {
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, buffer, {
-        contentType: file.type,
+        contentType: file.type || 'image/jpeg',
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
-
+    
+    // Fallback: If upload with path failed, try uploading directly to bucket root
     if (error) {
-      console.error("Supabase upload error details:", error);
-      throw new Error(`Upload failed: ${error.message}`);
+       console.warn("Folder upload failed, trying root upload...", error.message);
+       const rootPath = fileName;
+       const { data: rootData, error: rootError } = await supabase.storage
+         .from(bucket)
+         .upload(rootPath, buffer, {
+           contentType: file.type || 'image/jpeg',
+           cacheControl: '3600',
+           upsert: true
+         });
+       
+       if (rootError) {
+         console.error("Supabase upload error details:", rootError);
+         throw new Error(`Upload failed: ${rootError.message}`);
+       }
+       
+       const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(rootPath);
+       return publicUrl;
     }
 
     const { data: { publicUrl } } = supabase.storage
