@@ -6,15 +6,14 @@ export async function uploadFile(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const isKeyValid = (key: string | undefined) => !!key && key.startsWith("eyJ");
-  const hasSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL && 
-    (isKeyValid(process.env.SUPABASE_SERVICE_ROLE_KEY) || isKeyValid(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY));
+  const hasSupabase = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && 
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY));
   
   console.log("Upload Debug:", {
     hasSupabase,
     url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    serviceKey: isKeyValid(process.env.SUPABASE_SERVICE_ROLE_KEY),
-    anonKey: isKeyValid(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
+    hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     fileName: file.name,
     fileType: file.type
   });
