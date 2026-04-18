@@ -206,7 +206,9 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {userId ? (
+            {!mounted || !isLoaded ? (
+              <div className="h-10 w-24 bg-muted animate-pulse rounded-xl" />
+            ) : userId ? (
               <div className="flex items-center gap-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger id="tour-dashboard">
@@ -356,8 +358,10 @@ export default function Navbar() {
                   </Link>
                 </div>
 
-                <div className="pt-2">
-                   {userId ? (
+                 <div className="pt-2">
+                   {!mounted || !isLoaded ? (
+                      <div className="h-14 w-full bg-muted animate-pulse rounded-2xl" />
+                   ) : userId ? (
                       <Button asChild className="w-full h-14 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 bg-primary hover:scale-[1.02] active:scale-95 transition-all">
                         <Link href="/listings/create" onClick={() => setMobileMenuOpen(false)}>
                           <PlusSquare className="mr-2 h-6 w-6" />

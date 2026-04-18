@@ -16,19 +16,14 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
 ]);
 
-export const proxy = clerkMiddleware(async (auth, req) => {
-  const session = await auth();
-  const { userId } = session;
-
-  // Protect all non-public routes
+// Standard Clerk middleware pattern
+export default clerkMiddleware(async (auth, req) => {
+  // If the route is not public, protect it
   if (!isPublicRoute(req)) {
-    if (!userId) return session.redirectToSignIn();
+     await auth.protect();
   }
 
-  // Note: Blocked user check is now handled in RootLayout using Prisma 
-  // to avoid expensive Clerk API calls in the Edge runtime.
-
-  // Set pathname header for root layout fallback
+  // Set pathname header for root layout logic (e.g., blocked user check)
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-pathname', req.nextUrl.pathname);
 
@@ -38,8 +33,6 @@ export const proxy = clerkMiddleware(async (auth, req) => {
     },
   });
 });
-
-export default proxy;
 
 export const config = {
   matcher: [
