@@ -102,7 +102,13 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
                           lastMessage.text
                         ) : lastMessage?.imageUrl ? (
                           <span className="flex items-center gap-1.5 text-primary/80">
-                            <ImageIcon className="h-3.5 w-3.5" />
+                             <div className="w-5 h-5 rounded-[4px] overflow-hidden relative shrink-0 bg-muted">
+                               <img 
+                                 src={lastMessage.imageUrl} 
+                                 alt="" 
+                                 className="w-full h-full object-cover blur-[1px] scale-125 opacity-80" 
+                               />
+                             </div>
                             {locale === "uz" ? "Rasm" : "Фото"}
                           </span>
                         ) : lastMessage?.videoUrl ? (
