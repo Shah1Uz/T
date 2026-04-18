@@ -48,12 +48,12 @@ export default async function ChatDetailsPage({ params }: { params: Promise<{ id
 
 
   return (
-    <div className="container px-0 sm:px-4 py-0 sm:py-6 md:py-10 h-[calc(100svh-64px)] sm:h-[calc(100vh-100px)]">
-      <div className="bg-background sm:border rounded-none sm:rounded-2xl h-full flex overflow-hidden shadow-none sm:shadow-sm">
-        <div className="hidden md:block w-80 border-r overflow-y-auto">
+    <div className="w-full h-[calc(100dvh-68px)] md:container md:px-4 md:py-4 overflow-hidden flex flex-col">
+      <div className="flex-1 flex bg-card md:rounded-[24px] md:border border-border md:shadow-xl overflow-hidden min-h-0">
+        <div className="hidden md:block w-[350px] border-r border-border bg-muted/30 flex flex-col transition-all min-h-0 shrink-0">
           <ChatSidebar chats={allChatsWithListing} currentUserId={userId} activeChatId={chat.id} />
         </div>
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 flex flex-col bg-card min-h-0">
           <MessageArea chat={chatWithListing} currentUserId={userId} />
         </div>
       </div>

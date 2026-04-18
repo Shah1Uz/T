@@ -119,7 +119,7 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
                             <Mic className="h-4 w-4" />
                             {locale === "uz" ? "Ovozli xabar" : "Голосовое сообщение"}
                           </span>
-                        ) : lastMessage?.text ? (
+                        ) : lastMessage?.text && !["[Image]", "[image]", "[  image  ]", "[ Video ]", "[ Voice message ]"].includes(lastMessage.text.trim()) ? (
                           lastMessage.text
                         ) : (
                           t("chat.start_conv")

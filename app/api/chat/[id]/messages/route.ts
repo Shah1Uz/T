@@ -53,7 +53,7 @@ export async function POST(
       data: {
         chatId: id,
         senderId: userId,
-        text: text || (audioUrl ? "[Voice message]" : imageUrl ? "[Image]" : videoUrl ? "[Video]" : ""),
+        text: text || "",
         audioUrl,
         audioDuration,
         imageUrl,

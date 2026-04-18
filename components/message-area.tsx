@@ -681,7 +681,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                     )}
 
                     {/* Text */}
-                    {msg.text && !msg.audioUrl && !msg.videoUrl && (
+                    {msg.text && !msg.audioUrl && !msg.videoUrl && !msg.imageUrl && (
                       <p className="break-words whitespace-pre-wrap leading-relaxed text-[15px]">{msg.text}</p>
                     )}
 
