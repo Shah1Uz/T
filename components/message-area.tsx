@@ -570,9 +570,9 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
   return (
     <>
-    <div className="flex-1 flex flex-col min-h-0 bg-background dark:bg-slate-950">
+    <div className="flex-1 flex flex-col min-h-0 h-full bg-background dark:bg-slate-950 overflow-hidden relative">
       {/* Header */}
-      <div className="sticky top-0 z-40 px-4 py-3 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-3 shadow-sm">
+      <div className="flex-none z-40 px-4 py-3 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 -ml-1 h-10 w-10 rounded-2xl hover:bg-muted/50 active:scale-90 transition-all">
             <Link href="/chat"><ArrowLeft className="h-6 w-6" /></Link>
@@ -613,7 +613,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-none bg-muted/20 dark:bg-slate-900/40">
+      <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none bg-muted/20 dark:bg-slate-900/40">
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 text-muted-foreground opacity-50">
@@ -886,7 +886,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
       {/* Input area */}
       {!voice.recording && !voice.audioBlob && (
-        <div className="relative px-4 py-4 border-t bg-card flex items-center gap-3">
+        <div className="flex-none relative px-4 py-4 border-t bg-card flex items-center gap-3">
           {showEmoji && (
             <div className="absolute bottom-[100%] left-4 mb-2 z-50 shadow-2xl rounded-2xl overflow-hidden border border-border">
                <EmojiPicker onEmojiClick={(e) => {

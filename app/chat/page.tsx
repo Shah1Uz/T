@@ -105,7 +105,7 @@ export default function ChatPage() {
       <div className="flex-1 flex bg-card md:rounded-[24px] md:border border-border md:shadow-xl overflow-hidden min-h-0">
         {/* Sidebar */}
         <div className={clsx(
-          "w-full md:w-[350px] border-r border-border bg-muted/30 flex flex-col transition-all",
+          "w-full md:w-[350px] border-r border-border bg-muted/30 flex flex-col transition-all min-h-0 shrink-0",
           chatId ? "hidden md:flex" : "flex"
         )}>
           <ChatList chats={chats} activeChatId={chatId} />
@@ -113,7 +113,7 @@ export default function ChatPage() {
 
         {/* Chat Window */}
         <div className={clsx(
-          "flex-1 flex flex-col bg-card",
+          "flex-1 flex flex-col bg-card min-h-0",
           !chatId ? "hidden md:flex" : "flex"
         )}>
           {chatId ? (activeChat ? (
