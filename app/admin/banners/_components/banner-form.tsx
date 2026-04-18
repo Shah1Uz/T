@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, Image as ImageIcon, Crop as CropIcon } from "lucide-react";
 import Link from "next/link";
 import { createBannerAction, updateBannerAction } from "@/server/actions/banner.action";
+import CustomSelect from "@/components/custom-select";
 
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -247,18 +248,18 @@ export default function BannerForm({ initialData, isEdit = false }: BannerFormPr
             />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold">Fon naqshi (Pattern)</Label>
-          <select 
+        <div className="space-y-1">
+          <CustomSelect 
+            label="Fon naqshi (Pattern)"
             value={bgPattern} 
-            onChange={(e) => setBgPattern(e.target.value)}
-            className="h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            <option value="">Yo'q</option>
-            <option value="grid">Grid (To'r)</option>
-            <option value="dots">Dots (Nuqtalar)</option>
-            <option value="waves">Waves (To'lqinlar)</option>
-          </select>
+            onChange={setBgPattern}
+            options={[
+              { value: "", label: "Yo'q" },
+              { value: "grid", label: "Grid (To'r)" },
+              { value: "dots", label: "Dots (Nuqtalar)" },
+              { value: "waves", label: "Waves (To'lqinlar)" }
+            ]}
+          />
         </div>
       </div>
 

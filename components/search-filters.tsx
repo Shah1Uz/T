@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CustomSelect from "@/components/custom-select";
+import { useLocale } from "@/context/locale-context";
 
 export default function SearchFilters({ locations }: { locations: any[] }) {
+  const { locale } = useLocale();
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -54,18 +57,13 @@ export default function SearchFilters({ locations }: { locations: any[] }) {
         </div>
 
         <div className="space-y-2">
-          <Label>Hudud</Label>
-          <select 
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          <CustomSelect 
+            label={locale === "uz" ? "Hudud" : "Регион"}
             value={filters.locationId}
-            onChange={(e) => setFilters({...filters, locationId: e.target.value})}
-          >
-            <option value="">Barchasi</option>
-            {locations.map((loc: any) => (
-              <option key={loc.id} value={loc.id}>{loc.name}</option>
-            ))}
-
-          </select>
+            options={[{ value: "", label: locale === "uz" ? "Barchasi" : "Все" }, ...locations.map((loc: any) => ({ value: loc.id, label: loc.name }))]}
+            onChange={(val) => setFilters({...filters, locationId: val})}
+            searchable
+          />
         </div>
 
         <div className="space-y-2">

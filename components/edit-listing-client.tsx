@@ -15,6 +15,7 @@ import LocationPicker from "@/components/location-picker";
 import { useLocale } from "@/context/locale-context";
 import Link from "next/link";
 import Image from "next/image";
+import CustomSelect from "@/components/custom-select";
 
 const listingSchema = z.object({
   title: z.string().min(5),
@@ -145,19 +146,27 @@ export default function EditListingClient({ listing }: { listing: any }) {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t("create.type")}</Label>
-                    <select {...register("type")} className="w-full h-14 bg-muted/20 rounded-2xl px-4 font-bold outline-none appearance-none">
-                      <option value="sale">{t("listing.sale")}</option>
-                      <option value="rent">{t("listing.rent")}</option>
-                    </select>
+                  <div className="space-y-1">
+                    <CustomSelect
+                      label={t("create.type")}
+                      value={watch("type")}
+                      onChange={(val) => setValue("type", val as any)}
+                      options={[
+                        { value: "sale", label: t("listing.sale") },
+                        { value: "rent", label: t("listing.rent") }
+                      ]}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold uppercase tracking-widest text-muted-foreground">{t("create.property_type")}</Label>
-                    <select {...register("propertyType")} className="w-full h-14 bg-muted/20 rounded-2xl px-4 font-bold outline-none appearance-none">
-                      <option value="apartment">{t("listing.apartment")}</option>
-                      <option value="house">{t("listing.house")}</option>
-                    </select>
+                  <div className="space-y-1">
+                    <CustomSelect
+                      label={t("create.property_type")}
+                      value={watch("propertyType")}
+                      onChange={(val) => setValue("propertyType", val as any)}
+                      options={[
+                        { value: "apartment", label: t("listing.apartment") },
+                        { value: "house", label: t("listing.house") }
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -233,32 +242,32 @@ export default function EditListingClient({ listing }: { listing: any }) {
                 <CardTitle className="text-xl font-black">{t("create.location")}</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-bold uppercase text-muted-foreground">{t("create.region")}</Label>
-                  <select
-                    className="w-full h-12 bg-muted/20 rounded-xl px-4 font-bold outline-none"
+                <div className="space-y-1">
+                  <CustomSelect
+                    label={t("create.region")}
                     value={selectedRegion?.id || ""}
-                    onChange={(e) => {
-                      const region = locations.find(l => l.id === e.target.value);
+                    placeholder={t("create.region_placeholder")}
+                    searchable
+                    options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
+                    onChange={(val) => {
+                      const region = locations.find(l => l.id === val);
                       setSelectedRegion(region);
                       setValue("locationId", region?.id || "");
                     }}
-                  >
-                    <option value="">{t("create.region_placeholder")}</option>
-                    {locations.map(loc => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
-                  </select>
+                  />
                 </div>
+                
 
                 {selectedRegion?.children?.length > 0 && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                    <Label className="text-xs font-bold uppercase text-muted-foreground">{t("create.district")}</Label>
-                    <select
-                      {...register("locationId")}
-                      className="w-full h-12 bg-muted/20 rounded-xl px-4 font-bold outline-none"
-                    >
-                      <option value="">{t("create.district_placeholder")}</option>
-                      {selectedRegion.children.map((child: any) => <option key={child.id} value={child.id}>{child.name}</option>)}
-                    </select>
+                  <div className="space-y-1 animate-in fade-in slide-in-from-top-1">
+                    <CustomSelect
+                      label={t("create.district")}
+                      value={watch("locationId")}
+                      placeholder={t("create.district_placeholder")}
+                      searchable
+                      options={selectedRegion.children.map((child: any) => ({ value: child.id, label: child.name }))}
+                      onChange={(val) => setValue("locationId", val)}
+                    />
                   </div>
                 )}
 

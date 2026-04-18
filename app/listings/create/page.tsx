@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Upload, X, Navigation } from "lucide-react";
+import { Loader2, Upload, X, Navigation, MapPin } from "lucide-react";
 import LocationPicker from "@/components/location-picker";
 import { useLocale } from "@/context/locale-context";
 import { toast } from "sonner";
+import CustomSelect from "@/components/custom-select";
 
 import { listingSchema } from "@/lib/validations";
 
@@ -194,18 +195,26 @@ export default function CreateListingPage() {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-foreground">{t("create.type")}</Label>
-                    <select {...register("type")} className="w-full h-12 border rounded-lg px-3 bg-background focus:ring-1 focus:ring-primary outline-none transition-all text-base appearance-none cursor-pointer">
-                      <option value="sale">{t("listing.sale")}</option>
-                      <option value="rent">{t("listing.rent")}</option>
-                    </select>
+                    <CustomSelect
+                      label={t("create.type")}
+                      value={watch("type")}
+                      onChange={(val) => setValue("type", val)}
+                      options={[
+                        { value: "sale", label: t("listing.sale") },
+                        { value: "rent", label: t("listing.rent") }
+                      ]}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-foreground">{t("create.property_type")}</Label>
-                    <select {...register("propertyType")} className="w-full h-12 border rounded-lg px-3 bg-background focus:ring-1 focus:ring-primary outline-none transition-all text-base appearance-none cursor-pointer">
-                      <option value="apartment">{t("listing.apartment")}</option>
-                      <option value="house">{t("listing.house")}</option>
-                    </select>
+                    <CustomSelect
+                      label={t("create.property_type")}
+                      value={watch("propertyType")}
+                      onChange={(val) => setValue("propertyType", val)}
+                      options={[
+                        { value: "apartment", label: t("listing.apartment") },
+                        { value: "house", label: t("listing.house") }
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -308,57 +317,46 @@ export default function CreateListingPage() {
               <CardContent className="p-6 space-y-5">
                  {/* Region select */}
                  <div className="space-y-2">
-                    <Label className="text-sm font-semibold text-foreground">{t("create.region")}</Label>
-                    <select
-                      className="w-full h-12 border rounded-lg px-3 bg-background focus:ring-1 focus:ring-primary outline-none transition-all text-base appearance-none cursor-pointer"
-                      onChange={(e) => {
-                        const region = locations.find(l => l.id === e.target.value) || null;
+                    <CustomSelect
+                      label={t("create.region")}
+                      value={selectedRegion?.id || ""}
+                      placeholder={t("create.region_placeholder")}
+                      searchable
+                      options={locations.map(loc => ({ value: loc.id, label: loc.name }))}
+                      onChange={(val) => {
+                        const region = locations.find(l => l.id === val) || null;
                         setSelectedRegion(region);
                         if (region) {
                           updateMapPosition(region.name);
                         }
-                        // If region has no children, use region itself as locationId
                         if (region && (!region.children || region.children.length === 0)) {
                           setValue("locationId", region.id);
                         } else {
                           setValue("locationId", "");
                         }
                       }}
-                    >
-                      <option value="">{t("create.region_placeholder")}</option>
-                      {locations.map(loc => (
-                        <option key={loc.id} value={loc.id}>{loc.name}</option>
-                      ))}
-                    </select>
+                    />
                  </div>
 
-                 {/* District select — only shown when selected region has children */}
+                 {/* District select */}
                  {selectedRegion && selectedRegion.children && selectedRegion.children.length > 0 && (
                    <div className="space-y-2">
-                     <Label className="text-sm font-semibold text-foreground">
-                       {t("create.district") || (t("nav.login") === "Kirish" ? "Tuman" : "Район")}
-                     </Label>
-                     <select
-                       {...register("locationId")}
-                       className="w-full h-12 border rounded-lg px-3 bg-background focus:ring-1 focus:ring-primary outline-none transition-all text-base appearance-none cursor-pointer"
-                       onChange={(e) => {
-                         const val = e.target.value;
-                         setValue("locationId", val);
-                         if (selectedRegion && selectedRegion.children) {
-                           const district = selectedRegion.children.find((c: any) => c.id === val);
-                           if (district) {
-                             updateMapPosition(district.name);
-                           }
-                         }
-                       }}
-                     >
-                       <option value="">
-                         {t("create.district_placeholder") || (t("nav.login") === "Kirish" ? "Tumanni tanlang" : "Выберите район")}
-                       </option>
-                       {selectedRegion.children.map((child: any) => (
-                         <option key={child.id} value={child.id}>{child.name}</option>
-                       ))}
-                     </select>
+                     <CustomSelect
+                        label={t("create.district") || (t("nav.login") === "Kirish" ? "Tuman" : "Район")}
+                        value={watch("locationId")}
+                        placeholder={t("create.district_placeholder") || (t("nav.login") === "Kirish" ? "Tumanni tanlang" : "Выберите район")}
+                        searchable
+                        options={selectedRegion.children.map((child: any) => ({ value: child.id, label: child.name }))}
+                        onChange={(val) => {
+                          setValue("locationId", val);
+                          if (selectedRegion && selectedRegion.children) {
+                            const district = selectedRegion.children.find((c: any) => c.id === val);
+                            if (district) {
+                              updateMapPosition(district.name);
+                            }
+                          }
+                        }}
+                     />
                      {errors.locationId && <p className="text-sm font-bold text-destructive">{errors.locationId.message as string}</p>}
                    </div>
                  )}

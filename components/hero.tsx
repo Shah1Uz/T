@@ -5,11 +5,13 @@ import { Search, MapPin, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import RegionPicker from "@/components/region-picker";
 
 export default function Hero() {
   const { t, locale } = useLocale();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -17,9 +19,11 @@ export default function Hero() {
   }, []);
 
   const handleSearch = () => {
-    if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query)}`);
-    }
+    let url = `/search?`;
+    if (query.trim()) url += `q=${encodeURIComponent(query)}&`;
+    if (selectedRegion) url += `region=${encodeURIComponent(selectedRegion)}`;
+    
+    router.push(url);
     document.getElementById("listings-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -72,14 +76,14 @@ export default function Hero() {
 
         {/* Search Bar */}
         <div id="tour-hero-search" className="max-w-3xl 3xl:max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row gap-0 bg-white border border-black/10 rounded-full p-1 shadow-[0_16px_32px_rgba(0,0,0,0.15)] ring-1 ring-black/5">
-            <div className="flex-1 flex items-center gap-3 px-6 3xl:px-12 py-3 3xl:py-6 hover:bg-slate-50 transition-all rounded-l-full">
-              <div className="flex flex-col">
-                <span className="text-[10px] 3xl:text-lg font-black text-slate-900 uppercase tracking-widest">{t("hero.category")}</span>
+          <div className="flex flex-col sm:flex-row gap-0 bg-white dark:bg-slate-900 border border-black/10 dark:border-white/10 rounded-[32px] sm:rounded-full p-2 shadow-[0_20px_50px_rgba(0,0,0,0.3)] ring-1 ring-black/5 backdrop-blur-xl">
+            <div className="flex-1 flex items-center gap-3 px-6 3xl:px-12 py-3 3xl:py-6 hover:bg-slate-50 dark:hover:bg-white/5 transition-all rounded-t-[28px] sm:rounded-l-full sm:rounded-t-none group">
+              <div className="flex flex-col w-full">
+                <span className="text-[10px] 3xl:text-lg font-black text-slate-900 dark:text-white uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{t("hero.category")}</span>
                 <input
                   type="text"
                   placeholder={t("hero.search")}
-                  className="w-full bg-transparent border-none outline-none text-slate-700 font-medium placeholder:text-slate-400 text-[14px] 3xl:text-2xl"
+                  className="w-full bg-transparent border-none outline-none text-slate-700 dark:text-slate-200 font-bold placeholder:text-slate-400 text-[14px] 3xl:text-2xl"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -87,20 +91,22 @@ export default function Hero() {
               </div>
             </div>
             
-            <div className="hidden sm:flex h-12 3xl:h-20 w-px bg-slate-200 self-center" />
+            <div className="hidden sm:block h-10 3xl:h-20 w-px bg-slate-200 dark:bg-white/10 self-center" />
 
-            <div className="hidden sm:flex flex-col flex-1 justify-center px-6 3xl:px-12 py-3 3xl:py-6 hover:bg-slate-50 transition-all">
-              <span className="text-[10px] 3xl:text-lg font-black text-slate-900 uppercase tracking-widest">{locale === "uz" ? "Joylashuv" : "Место"}</span>
-              <span className="text-slate-500 font-medium text-[14px] 3xl:text-2xl truncate">{t("hero.uzbekistan")}</span>
+            <div className="flex-1 flex flex-col justify-center px-6 3xl:px-12 py-3 3xl:py-6 hover:bg-slate-50 dark:hover:bg-white/5 transition-all sm:rounded-none group border-t sm:border-t-0 dark:border-white/10">
+              <RegionPicker 
+                currentValue={selectedRegion}
+                onSelect={setSelectedRegion}
+              />
             </div>
 
-            <div className="flex items-center p-1">
+            <div className="flex items-center p-1 border-t sm:border-t-0 dark:border-white/10 pt-4 sm:pt-1">
               <Button
                 size="lg"
                 onClick={handleSearch}
-                className="h-12 3xl:h-20 w-full sm:w-auto px-8 3xl:px-16 rounded-full font-bold text-[15px] 3xl:text-2xl bg-[#FF385C] hover:bg-[#E31C5F] text-white shadow-lg transition-all"
+                className="h-14 sm:h-12 3xl:h-20 w-full sm:w-auto px-10 3xl:px-20 rounded-2xl sm:rounded-full font-black text-[16px] 3xl:text-2xl bg-[#FF385C] hover:bg-[#E31C5F] text-white shadow-[0_10px_20px_rgba(255,56,92,0.3)] transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
               >
-                <Search className="h-4 w-4 3xl:h-8 3xl:w-8 mr-2" />
+                <Search className="h-5 w-5 3xl:h-8 3xl:w-8" />
                 <span>{t("hero.search").replace("...", "")}</span>
               </Button>
             </div>
