@@ -91,7 +91,41 @@ export default function LocationPicker({ onSelect, initialLat, initialLng }: Loc
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [onSelect]);
+  }, []); // Only run on mount
+
+  // Watch for initialLat/initialLng changes and update map view
+  useEffect(() => {
+    if (!mapRef.current || !initialLat || !initialLng) return;
+    
+    const L = (window as any).L;
+    const newPos: [number, number] = [initialLat, initialLng];
+    
+    // Update map view
+    mapRef.current.setView(newPos, mapRef.current.getZoom());
+    
+    // Create/Update marker
+    const makeIcon = (L: any) => L.divIcon({
+      className: "",
+      html: `<div style="
+        background: #3D5AFE;
+        width: 40px; height: 40px;
+        border-radius: 50% 50% 50% 0;
+        transform: rotate(-45deg);
+        box-shadow: 0 6px 20px rgba(61,90,254,0.5);
+        border: 3px solid white;
+      "></div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+    });
+
+    if (markerRef.current) {
+      markerRef.current.setLatLng(newPos);
+    } else if (L) {
+      markerRef.current = L.marker(newPos, { icon: makeIcon(L) }).addTo(mapRef.current);
+    }
+
+    setCoords({ lat: initialLat, lng: initialLng });
+  }, [initialLat, initialLng]);
 
   return (
     <div className="relative w-full h-full">

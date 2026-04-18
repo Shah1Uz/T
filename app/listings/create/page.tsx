@@ -387,7 +387,6 @@ export default function CreateListingPage() {
                   </div>
                   <div className="h-[250px] rounded-lg overflow-hidden border relative">
                     <LocationPicker 
-                      key={`${watch("latitude")}-${watch("longitude")}`}
                       initialLat={watch("latitude")}
                       initialLng={watch("longitude")}
                       onSelect={(lat, lng) => {

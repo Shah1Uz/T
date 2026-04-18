@@ -295,7 +295,6 @@ export default function EditListingClient({ listing }: { listing: any }) {
                 </div>
                 <div className="h-[200px] rounded-2xl overflow-hidden border shadow-inner">
                   <LocationPicker 
-                    key={`${watch("latitude")}-${watch("longitude")}`}
                     initialLat={watch("latitude")}
                     initialLng={watch("longitude")}
                     onSelect={(lat, lng) => {
