@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Image as ImageIcon, Video, Mic } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/context/locale-context";
 import { cn } from "@/lib/utils";
@@ -98,7 +98,26 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
                         "text-sm font-medium truncate",
                         isActive ? "text-muted-foreground" : "text-slate-500"
                       )}>
-                        {lastMessage?.text || t("chat.start_conv")}
+                        {lastMessage?.text ? (
+                          lastMessage.text
+                        ) : lastMessage?.imageUrl ? (
+                          <span className="flex items-center gap-1.5 text-primary/80">
+                            <ImageIcon className="h-3.5 w-3.5" />
+                            {locale === "uz" ? "Rasm" : "Фото"}
+                          </span>
+                        ) : lastMessage?.videoUrl ? (
+                          <span className="flex items-center gap-1.5 text-primary/80">
+                            <Video className="h-3.5 w-3.5" />
+                            {locale === "uz" ? "Video" : "Видео"}
+                          </span>
+                        ) : lastMessage?.audioUrl ? (
+                          <span className="flex items-center gap-1.5 text-primary/80">
+                            <Mic className="h-3.5 w-3.5" />
+                            {locale === "uz" ? "Ovozli xabar" : "Голосовое сообщение"}
+                          </span>
+                        ) : (
+                          t("chat.start_conv")
+                        )}
                       </p>
                       {chat.unreadCount > 0 && (
                         <div className="h-5 h-5 flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-black shrink-0 px-1.5">
