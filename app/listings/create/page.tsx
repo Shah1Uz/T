@@ -352,7 +352,7 @@ export default function CreateListingPage() {
                           if (selectedRegion && selectedRegion.children) {
                             const district = selectedRegion.children.find((c: any) => c.id === val);
                             if (district) {
-                              updateMapPosition(district.name);
+                              updateMapPosition(`${district.name}, ${selectedRegion.name}`);
                             }
                           }
                         }}

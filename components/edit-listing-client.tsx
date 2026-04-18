@@ -116,6 +116,19 @@ export default function EditListingClient({ listing }: { listing: any }) {
     }
   };
 
+  const updateMapPosition = async (name: string) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Uzbekistan")}`);
+      const data = await res.json();
+      if (data && data[0]) {
+        setValue("latitude", parseFloat(data[0].lat));
+        setValue("longitude", parseFloat(data[0].lon));
+      }
+    } catch (e) {
+      console.error("Error fetching coordinates:", e);
+    }
+  };
+
   return (
     <div className="container py-8 md:py-12 max-w-5xl">
       <div className="mb-8 flex items-center justify-between">
@@ -253,6 +266,9 @@ export default function EditListingClient({ listing }: { listing: any }) {
                       const region = locations.find(l => l.id === val);
                       setSelectedRegion(region);
                       setValue("locationId", region?.id || "");
+                      if (region) {
+                        updateMapPosition(region.name);
+                      }
                     }}
                   />
                 </div>
@@ -266,7 +282,15 @@ export default function EditListingClient({ listing }: { listing: any }) {
                       placeholder={t("create.district_placeholder")}
                       searchable
                       options={selectedRegion.children.map((child: any) => ({ value: child.id, label: child.name }))}
-                      onChange={(val) => setValue("locationId", val)}
+                      onChange={(val) => {
+                        setValue("locationId", val);
+                        if (selectedRegion && selectedRegion.children) {
+                          const district = selectedRegion.children.find((c: any) => c.id === val);
+                          if (district) {
+                            updateMapPosition(`${district.name}, ${selectedRegion.name}`);
+                          }
+                        }
+                      }}
                     />
                   </div>
                 )}
