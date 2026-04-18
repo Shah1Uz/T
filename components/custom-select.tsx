@@ -45,8 +45,19 @@ export default function CustomSelect({
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+
+    // Scroll lock when open
+    if (open && isMobile) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+      document.body.style.overflow = "unset";
+    };
+  }, [open, isMobile]);
 
   const selectedOption = options.find(opt => opt.value === value);
   const filteredOptions = searchable 
@@ -108,6 +119,7 @@ export default function CustomSelect({
                 <div className="p-4 border-b dark:border-white/10 flex items-center justify-between">
                   <h3 className="text-xl font-black tracking-tight">{label || (locale === "uz" ? "Tanlang" : "Выберите")}</h3>
                   <button 
+                    type="button"
                     onClick={() => setOpen(false)}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full transition-colors"
                   >
@@ -135,6 +147,7 @@ export default function CustomSelect({
                   <div className="grid grid-cols-1 gap-1">
                     {filteredOptions.map((opt) => (
                       <button
+                        type="button"
                         key={opt.value}
                         onClick={() => handleSelect(opt.value)}
                         className={cn(

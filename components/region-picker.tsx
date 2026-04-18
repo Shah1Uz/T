@@ -45,8 +45,19 @@ export default function RegionPicker({ onSelect, currentValue, className }: Regi
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+    
+    // Scroll lock when open
+    if (open && isMobile) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      window.removeEventListener("resize", checkMobile);
+      document.body.style.overflow = "unset";
+    };
+  }, [open, isMobile]);
 
   const filteredRegions = REGIONS.filter(r => 
     (locale === "uz" ? r.uz : r.ru).toLowerCase().includes(search.toLowerCase())
@@ -59,9 +70,10 @@ export default function RegionPicker({ onSelect, currentValue, className }: Regi
   };
 
   const Trigger = (
-    <div 
+    <button 
+      type="button"
       className={cn(
-        "flex flex-col cursor-pointer group transition-all",
+        "flex flex-col cursor-pointer group transition-all text-left",
         className
       )}
       onClick={() => setOpen(true)}
@@ -72,7 +84,7 @@ export default function RegionPicker({ onSelect, currentValue, className }: Regi
       <span className="text-slate-700 dark:text-slate-300 font-bold text-[14px] 3xl:text-2xl truncate group-hover:text-primary transition-colors">
         {currentValue || (locale === "uz" ? "Qayerga?" : "Куда?")}
       </span>
-    </div>
+    </button>
   );
 
   if (isMobile) {
@@ -99,6 +111,7 @@ export default function RegionPicker({ onSelect, currentValue, className }: Regi
                 <div className="p-4 border-b dark:border-white/10 flex items-center justify-between">
                   <h3 className="text-xl font-black tracking-tight">{locale === "uz" ? "Viloyatni tanlang" : "Выберите регион"}</h3>
                   <button 
+                    type="button"
                     onClick={() => setOpen(false)}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full transition-colors"
                   >
@@ -124,6 +137,7 @@ export default function RegionPicker({ onSelect, currentValue, className }: Regi
                   <div className="grid grid-cols-1 gap-1">
                     {filteredRegions.map((region) => (
                       <button
+                        type="button"
                         key={region.id}
                         onClick={() => handleSelect(region)}
                         className={cn(
