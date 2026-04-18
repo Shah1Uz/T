@@ -41,11 +41,11 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
   }, []);
 
   return (
-    <div className="flex flex-col h-full bg-muted/30">
-      <div className="p-6 border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-10">
-        <h2 className="text-xl font-extrabold text-foreground tracking-tight flex items-center gap-2">
+    <div className="flex flex-col h-full bg-background dark:bg-slate-950">
+      <div className="px-6 py-5 border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-10">
+        <h2 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
           {t("chat.title")}
-          <span className="h-5 px-1.5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center">
+          <span className="h-6 px-2 rounded-full bg-primary/10 text-primary text-[12px] font-black flex items-center justify-center shadow-inner">
             {chats.length}
           </span>
         </h2>
@@ -64,10 +64,10 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
                   key={chat.id} 
                   href={`/chat?id=${chat.id}`}
                   className={cn(
-                    "flex items-center gap-4 p-4 rounded-[22px] transition-all duration-300 cursor-pointer group relative overflow-hidden",
+                    "flex items-center gap-4 p-4 rounded-[24px] transition-all duration-300 cursor-pointer group relative overflow-hidden",
                     isActive 
-                      ? "bg-card shadow-lg border border-border/50 scale-[1.02] z-10" 
-                      : "hover:bg-card/60 border border-transparent"
+                      ? "bg-card shadow-xl shadow-primary/5 border-primary/20 scale-[1.02] z-10" 
+                      : "hover:bg-card/80 border border-transparent"
                   )}
                 >
                   {isActive && (

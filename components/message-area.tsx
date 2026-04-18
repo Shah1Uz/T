@@ -570,21 +570,25 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
   return (
     <>
+    <div className="flex-1 flex flex-col min-h-0 bg-background dark:bg-slate-950">
       {/* Header */}
-      <div className="px-4 py-3 border-b bg-card flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-40 px-4 py-3 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-3 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 -ml-1 h-9 w-9 rounded-xl">
-            <Link href="/chat"><ArrowLeft className="h-5 w-5" /></Link>
+          <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 -ml-1 h-10 w-10 rounded-2xl hover:bg-muted/50 active:scale-90 transition-all">
+            <Link href="/chat"><ArrowLeft className="h-6 w-6" /></Link>
           </Button>
-          <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-3 min-w-0 hover:bg-muted/50 p-1.5 rounded-2xl transition-all group/header active:scale-95">
-            <Avatar className="h-10 w-10 border border-border shadow-sm group-hover/header:border-primary/30 transition-colors">
-              <AvatarImage src={otherUser?.imageUrl || ""} alt={otherName} />
-              <AvatarFallback className="bg-primary/5 text-primary font-black uppercase">
-                {otherName.substring(0, 2)}
-              </AvatarFallback>
-            </Avatar>
+          <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-3 min-w-0 hover:bg-muted/30 p-1 rounded-2xl transition-all group/header active:scale-95">
+            <div className="relative shrink-0">
+              <Avatar className="h-11 w-11 border-2 border-background shadow-md group-hover/header:border-primary/30 transition-all">
+                <AvatarImage src={otherUser?.imageUrl || ""} alt={otherName} className="object-cover" />
+                <AvatarFallback className="bg-primary/5 text-primary font-black uppercase text-sm">
+                  {otherName.substring(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-emerald-500 shadow-sm" />
+            </div>
             <div className="min-w-0 flex flex-col justify-center">
-              <div className="font-bold text-foreground truncate flex items-center gap-1.5 leading-tight group-hover/header:text-primary transition-colors">
+              <div className="font-extrabold text-foreground truncate flex items-center gap-1.5 leading-tight group-hover/header:text-primary transition-colors text-[15px]">
                 <span className="truncate">{otherName}</span>
                 {otherUser?.isVerified && (
                   <Badge variant="secondary" className="h-4 w-4 p-0 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 border-none shrink-0">
@@ -592,20 +596,25 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2 h-4">
+              <div className="flex items-center h-4">
                 {getStatus(otherUserStatus || otherUser?.lastActive)}
               </div>
             </div>
           </Link>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {/* Call features removed by user request */}
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+            <Phone className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
+            <Video className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/40 bg-muted/30 dark:bg-transparent">
-        <div className="max-w-4xl 3xl:max-w-6xl mx-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto scrollbar-none bg-muted/20 dark:bg-slate-900/40">
+        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 text-muted-foreground opacity-50">
             <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -647,10 +656,10 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   )}
                   
                   <div className={cn(
-                    msg.videoUrl ? "flex flex-col relative" : "rounded-[24px] px-4 py-3 shadow-md overflow-hidden transition-all group-hover/msg:shadow-lg relative",
+                    msg.videoUrl ? "flex flex-col relative" : "rounded-[24px] px-4 py-3 shadow-sm overflow-hidden transition-all group-hover/msg:shadow-lg relative",
                     !msg.videoUrl && isOwn
-                      ? "bg-gradient-to-br from-primary via-primary/95 to-blue-600 text-white rounded-br-none shadow-primary/20 border border-primary/10"
-                      : (!msg.videoUrl ? "bg-card dark:bg-muted/50 border border-border/50 rounded-bl-none text-foreground shadow-sm" : "")
+                      ? "bg-gradient-to-br from-[#3D5AFE] via-[#304FFE] to-[#283593] text-white rounded-br-none shadow-[#304FFE]/20 border border-white/10"
+                      : (!msg.videoUrl ? "bg-card dark:bg-slate-800 border border-border/40 rounded-bl-none text-foreground shadow-sm" : "")
                   )}>
                     {/* Voice message */}
                     {msg.audioUrl && <AudioPlayer url={msg.audioUrl} duration={msg.audioDuration} variant={isOwn ? "primary" : "muted"} />}
@@ -959,6 +968,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
           </div>
         </div>
       )}
+    </div>
     </>
   );
 }
