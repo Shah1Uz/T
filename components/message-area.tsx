@@ -348,6 +348,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
   const [showFullPickerFor, setShowFullPickerFor] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const voice = useVoiceRecorder();
   const video = useVideoRecorder();
 
@@ -670,7 +671,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                         src={msg.imageUrl} 
                         alt="img" 
                         className="rounded-xl max-w-full max-h-64 object-cover mb-1 cursor-pointer hover:opacity-90 transition-opacity" 
-                        onClick={() => window.open(msg.imageUrl, '_blank')}
+                        onClick={() => setSelectedImage(msg.imageUrl)}
                       />
                     )}
 
@@ -969,6 +970,42 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
         </div>
       )}
     </div>
+
+    {/* Image Lightbox */}
+    <AnimatePresence>
+      {selectedImage && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[10000] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setSelectedImage(null)}
+        >
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative max-w-5xl w-full h-full flex items-center justify-center pointer-events-none"
+          >
+            <img 
+              src={selectedImage} 
+              alt="Full screen view" 
+              className="max-w-full max-h-full object-contain shadow-2xl pointer-events-auto cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-4 right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all backdrop-blur-md border border-white/10"
+            onClick={() => setSelectedImage(null)}
+          >
+            <X className="h-6 w-6" />
+          </Button>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   );
 }
