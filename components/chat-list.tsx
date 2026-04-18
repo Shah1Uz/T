@@ -98,29 +98,29 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
                         "text-sm font-medium truncate",
                         isActive ? "text-muted-foreground" : "text-slate-500"
                       )}>
-                        {lastMessage?.text ? (
-                          lastMessage.text
-                        ) : lastMessage?.imageUrl ? (
+                        {lastMessage?.imageUrl ? (
                           <span className="flex items-center gap-1.5 text-primary/80">
-                             <div className="w-5 h-5 rounded-[4px] overflow-hidden relative shrink-0 bg-muted">
+                             <div className="w-5 h-5 rounded-[4px] overflow-hidden relative shrink-0 bg-muted ring-1 ring-primary/10">
                                <img 
                                  src={lastMessage.imageUrl} 
                                  alt="" 
-                                 className="w-full h-full object-cover blur-[1px] scale-125 opacity-80" 
+                                 className="w-full h-full object-cover blur-[1.5px] scale-150 opacity-90" 
                                />
                              </div>
                             {locale === "uz" ? "Rasm" : "Фото"}
                           </span>
                         ) : lastMessage?.videoUrl ? (
-                          <span className="flex items-center gap-1.5 text-primary/80">
-                            <Video className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5 text-primary/80 font-bold">
+                            <Video className="h-4 w-4" />
                             {locale === "uz" ? "Video" : "Видео"}
                           </span>
                         ) : lastMessage?.audioUrl ? (
-                          <span className="flex items-center gap-1.5 text-primary/80">
-                            <Mic className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5 text-primary/80 font-bold">
+                            <Mic className="h-4 w-4" />
                             {locale === "uz" ? "Ovozli xabar" : "Голосовое сообщение"}
                           </span>
+                        ) : lastMessage?.text ? (
+                          lastMessage.text
                         ) : (
                           t("chat.start_conv")
                         )}
