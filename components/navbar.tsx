@@ -54,7 +54,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-[100] w-full border-b border-border/10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl shadow-sm" suppressHydrationWarning>
+      <header className="fixed top-0 left-0 right-0 z-[5000] w-full border-b border-border/10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-2xl shadow-sm" suppressHydrationWarning>
         <div suppressHydrationWarning className="container flex h-[68px] 3xl:h-[100px] items-center justify-between">
           
           <div className="flex items-center gap-8 3xl:gap-16">
