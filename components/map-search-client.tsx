@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function MapSearchClient() {
   const { t, locale } = useLocale();
@@ -44,6 +45,7 @@ export default function MapSearchClient() {
   });
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<any[] | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Calculate distance between two points
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -241,7 +243,7 @@ export default function MapSearchClient() {
         })
       });
       if (res.ok) {
-        alert(locale === "uz" ? "Qidiruv saqlandi! Yangi e'lonlar haqida bildirishnoma olasiz." : "Поиск сохранен! Вы получите уведомление о новых объявлениях.");
+        setShowSuccessModal(true);
       }
     } catch (e) {
       console.error("Save search failed:", e);
@@ -445,6 +447,53 @@ export default function MapSearchClient() {
           </div>
         )}
       </div>
+
+      {/* Success Notification Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md"
+            onClick={() => setShowSuccessModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[40px] p-8 shadow-2xl border border-white/20 flex flex-col items-center text-center relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Animated Background Glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-primary/20 blur-[60px] rounded-full -z-10" />
+              
+              <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mb-6 relative">
+                 <div className="absolute inset-0 bg-primary/20 rounded-3xl animate-pulse" />
+                 <Bell className="h-10 w-10 text-primary relative z-10" />
+              </div>
+              
+              <h3 className="text-2xl font-black mb-3 tracking-tight">
+                {locale === "uz" ? "Qidiruv saqlandi!" : "Поиск сохранен!"}
+              </h3>
+              
+              <p className="text-slate-500 dark:text-slate-400 font-bold text-sm leading-relaxed mb-8">
+                {locale === "uz" 
+                  ? "Siz chizgan hudud bo'yicha yangi e'lonlar chiqsa, biz sizga darhol bildirishnoma yuboramiz." 
+                  : "Мы отправим вам уведомление, как только появятся новые объявления в выбранной вами области."}
+              </p>
+              
+              <Button 
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full h-14 rounded-2xl text-base font-black shadow-xl shadow-primary/20 active:scale-95 transition-all"
+              >
+                {locale === "uz" ? "Tushunarli" : "Понятно"}
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Toggle Button */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:hidden">
