@@ -34,6 +34,7 @@ export default function MapSearchClient() {
   const [filteredListings, setFilteredListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list'); // 'list' or 'map' for mobile
   
   const [filters, setFilters] = useState({
     type: "",
@@ -180,6 +181,14 @@ export default function MapSearchClient() {
     updateMarkers();
   }, [filteredListings, polygonPoints]);
 
+  useEffect(() => {
+    if (viewMode === 'map' && mapRef.current) {
+      setTimeout(() => {
+        mapRef.current.invalidateSize();
+      }, 100);
+    }
+  }, [viewMode]);
+
   const isPointInPolygon = (point: number[], polygon: any[]) => {
     const x = point[0], y = point[1];
     let inside = false;
@@ -257,9 +266,12 @@ export default function MapSearchClient() {
   };
 
   return (
-    <div className="fixed inset-0 pt-[68px] 3xl:pt-[100px] flex overflow-hidden bg-background">
+    <div className="fixed inset-0 pt-[68px] 3xl:pt-[100px] flex flex-col md:flex-row overflow-hidden bg-background">
       {/* Sidebar Filter/List */}
-      <div className="w-full md:w-[400px] h-full flex flex-col border-r bg-card z-20 shadow-xl overflow-hidden">
+      <div className={cn(
+        "w-full md:w-[400px] h-full flex flex-col border-r bg-card z-20 shadow-xl overflow-hidden transition-all duration-300",
+        viewMode === 'map' ? "hidden md:flex" : "flex"
+      )}>
         <div className="p-4 border-b space-y-4">
           <div className="flex items-center gap-2">
             <Link href="/">
@@ -357,7 +369,10 @@ export default function MapSearchClient() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative">
+      <div className={cn(
+        "flex-1 relative h-full",
+        viewMode === 'list' ? "hidden md:block" : "block"
+      )}>
         <div ref={mapContainer} className="w-full h-full z-10" />
         
         {/* Floating Controls */}
@@ -429,6 +444,26 @@ export default function MapSearchClient() {
              </div>
           </div>
         )}
+      </div>
+
+      {/* Mobile Toggle Button */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] md:hidden">
+        <Button 
+          onClick={() => setViewMode(viewMode === 'list' ? 'map' : 'list')}
+          className="rounded-full shadow-2xl px-6 h-12 bg-primary text-white font-bold flex items-center gap-2 border-2 border-white/20 backdrop-blur-md"
+        >
+          {viewMode === 'list' ? (
+            <>
+              <MapPin className="h-5 w-5" />
+              {locale === "uz" ? "Xaritada ko'rish" : "Показать на карте"}
+            </>
+          ) : (
+            <>
+              <Search className="h-5 w-5" />
+              {locale === "uz" ? "Ro'yxatni ko'rish" : "Показать списком"}
+            </>
+          )}
+        </Button>
       </div>
 
       <style jsx global>{`
