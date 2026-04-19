@@ -46,6 +46,7 @@ export default function MapSearchClient() {
   const [drawingActive, setDrawingActive] = useState(false);
   const [polygonPoints, setPolygonPoints] = useState<any[] | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedSearches, setSavedSearches] = useState<any[]>([]);
 
   // Calculate distance between two points
   const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -67,6 +68,16 @@ export default function MapSearchClient() {
         setFilteredListings(data);
         setLoading(false);
       });
+
+    // Fetch saved searches
+    fetch("/api/user/saved-searches")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSavedSearches(data);
+        }
+      })
+      .catch(err => console.error("Failed to fetch saved searches:", err));
   }, []);
 
   useEffect(() => {
@@ -106,6 +117,7 @@ export default function MapSearchClient() {
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       updateMarkers();
+      renderSavedPolygons();
     };
 
     if ((window as any).L && (window as any).L.PM) {
@@ -191,6 +203,27 @@ export default function MapSearchClient() {
     }
   }, [viewMode]);
 
+  const renderSavedPolygons = () => {
+    const L = (window as any).L;
+    if (!L || !mapRef.current || !savedSearches.length) return;
+
+    savedSearches.forEach(search => {
+      if (search.polygon && Array.isArray(search.polygon)) {
+        L.polygon(search.polygon, {
+          color: '#3D5AFE',
+          fillColor: '#3D5AFE',
+          fillOpacity: 0.1,
+          weight: 2,
+          dashArray: '5, 5'
+        }).addTo(mapRef.current);
+      }
+    });
+  };
+
+  useEffect(() => {
+    renderSavedPolygons();
+  }, [savedSearches]);
+
   const isPointInPolygon = (point: number[], polygon: any[]) => {
     const x = point[0], y = point[1];
     let inside = false;
@@ -244,6 +277,10 @@ export default function MapSearchClient() {
       });
       if (res.ok) {
         setShowSuccessModal(true);
+        // Add to local list to display immediately
+        const newSearch = await res.json();
+        setSavedSearches(prev => [newSearch, ...prev]);
+        setPolygonPoints(null); // Clear temporary drawing
       }
     } catch (e) {
       console.error("Save search failed:", e);
@@ -446,6 +483,27 @@ export default function MapSearchClient() {
              </div>
           </div>
         )}
+
+        {/* Prominent Save Button after drawing */}
+        <AnimatePresence>
+          {polygonPoints && !showSuccessModal && (
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 z-[100]"
+            >
+              <Button 
+                onClick={handleSaveSearch}
+                size="lg"
+                className="rounded-full shadow-2xl px-10 h-14 bg-primary text-white font-black flex items-center gap-3 border-4 border-white/20 backdrop-blur-md animate-bounce-subtle"
+              >
+                <Save className="h-6 w-6" />
+                {locale === "uz" ? "Hududni saqlash" : "Сохранить область"}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Success Notification Modal */}
@@ -559,6 +617,13 @@ export default function MapSearchClient() {
           background: white !important;
           color: #3D5AFE !important;
           transform: scale(1.05);
+        }
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0) translateX(-50%); }
+          50% { transform: translateY(-10px) translateX(-50%); }
+        }
+        .animate-bounce-subtle {
+          animation: bounce-subtle 2s infinite ease-in-out;
         }
       `}</style>
     </div>
