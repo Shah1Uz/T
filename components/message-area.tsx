@@ -1206,10 +1206,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   autoPlay 
                   muted 
                   playsInline 
-                  className={cn(
-                    "w-full h-full object-cover",
-                    video.facingMode === "user" && "scale-x-[-1]"
-                  )}
+                  className="w-full h-full object-cover"
                 />
                 
                 {/* Camera Switch Indicator */}
