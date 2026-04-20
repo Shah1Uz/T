@@ -464,14 +464,8 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       // 4. Render Loop
       let loopFacing = mode;
       const render = () => {
-        if (ctx && sourceVideoRef.current) {
-          ctx.save();
-          if (loopFacing === "user") {
-            ctx.translate(640, 0);
-            ctx.scale(-1, 1);
-          }
+        if (ctx && sourceVideoRef.current && sourceVideoRef.current.readyState >= 2) {
           ctx.drawImage(sourceVideoRef.current, 0, 0, 640, 640);
-          ctx.restore();
         }
         rafRef.current = requestAnimationFrame(render);
       };
@@ -1209,18 +1203,6 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Camera Switch Indicator */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    video.toggleCamera();
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md z-[110] transition-all active:scale-95"
-                >
-                  <RefreshCw className="h-5 w-5" />
-                </Button>
                 
                 {/* Recording Indicator at BOTTOM (Telegram Style) */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[13px] font-black text-white shadow-lg border border-white/10 z-20">
@@ -1235,14 +1217,28 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
             </div>
 
             <div className="flex items-center gap-6">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={() => video.stop()}
-                className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
-              >
-                <X className="h-6 w-6" />
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost"
+                  size="icon"
+                  className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    video.toggleCamera();
+                  }}
+                >
+                  <RefreshCw className="h-6 w-6" />
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => video.stop()}
+                  className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
 
               <div className="flex flex-col items-center gap-1">
                 <Button 
