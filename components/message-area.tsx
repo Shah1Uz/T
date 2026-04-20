@@ -1016,7 +1016,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
               </svg>
 
               {/* Video Preview */}
-              <div className="absolute inset-[6px] rounded-full overflow-hidden bg-black shadow-2xl">
+              <div className="absolute inset-[6px] rounded-full overflow-hidden bg-black shadow-2xl transition-all border border-white/5">
                 <video 
                   ref={videoPreviewRef} 
                   autoPlay 
@@ -1025,10 +1025,14 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   className="w-full h-full object-cover scale-x-[-1]" // Mirroring for front camera
                 />
                 
-                {/* Recording Indicator */}
-                <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-600/90 px-3 py-1.5 rounded-full text-[11px] font-black text-white shadow-lg animate-pulse">
-                  <div className="h-2 w-2 rounded-full bg-white shadow-[0_0_5px_white]" />
-                  <span>{video.formatTime(video.recordingTime)} / 01:00</span>
+                {/* Recording Indicator at BOTTOM (Telegram Style) */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[13px] font-black text-white shadow-lg border border-white/10 z-20">
+                  <motion.div 
+                    className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" 
+                    animate={{ opacity: [1, 0.4, 1] }} 
+                    transition={{ repeat: Infinity, duration: 1 }}
+                  />
+                  <span className="tabular-nums">{video.formatTime(video.recordingTime)}</span>
                 </div>
               </div>
             </div>
