@@ -554,12 +554,22 @@ function CircularVideoPlayer({ url, onExpand }: { url: string; onExpand?: () => 
 
 // ─── Expanded Video Modal ───────────────────────────────────────────────────
 function ExpandedVideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const [progress, setProgress] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleTimeUpdate = () => {
+    if (videoRef.current) {
+      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
+      setProgress(p);
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 cursor-pointer"
       onClick={onClose}
     >
       <motion.div 
@@ -567,25 +577,41 @@ function ExpandedVideoModal({ url, onClose }: { url: string; onClose: () => void
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.5, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative max-w-2xl w-full aspect-square rounded-full overflow-hidden border-4 border-white/20 shadow-2xl bg-black"
+        className="relative max-w-2xl w-full aspect-square rounded-full overflow-hidden border-4 border-white/10 shadow-2xl bg-black"
         onClick={(e) => e.stopPropagation()}
       >
         <video 
+          ref={videoRef}
           src={url} 
           autoPlay 
-          controls 
           loop 
           playsInline 
+          onTimeUpdate={handleTimeUpdate}
           className="w-full h-full object-cover" 
         />
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose}
-          className="absolute top-10 right-10 h-14 w-14 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 hover:bg-black/60 z-30"
-        >
-          <X className="h-8 w-8" />
-        </Button>
+        
+        {/* Real-time Progress Ring (Telegram Style) */}
+        <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+          <circle
+            cx="50%"
+            cy="50%"
+            r="49.5%"
+            className="fill-none stroke-blue-500 stroke-[4px]"
+            style={{
+              strokeDasharray: "100 100",
+              strokeDashoffset: 100 - progress,
+              transition: "stroke-dashoffset 0.1s linear"
+            }}
+          />
+        </svg>
+
+        {/* Pulse dot for active playback */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+          <span className="text-[11px] font-black text-white uppercase tracking-widest tabular-nums">
+            {videoRef.current ? `${Math.floor(videoRef.current.currentTime)}s` : "0s"}
+          </span>
+        </div>
       </motion.div>
     </motion.div>
   );
