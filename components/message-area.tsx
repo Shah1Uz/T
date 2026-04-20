@@ -39,7 +39,9 @@ function useVoiceRecorder() {
         audio: { 
           echoCancellation: true, 
           noiseSuppression: true, 
-          autoGainControl: true 
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
         } 
       });
       
@@ -47,7 +49,9 @@ function useVoiceRecorder() {
 
       // Setup Analyser for Visualizer (Isolated)
       try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
+          sampleRate: 48000
+        });
         audioCtxRef.current = audioCtx;
         
         if (audioCtx.state === "suspended") {
@@ -83,14 +87,18 @@ function useVoiceRecorder() {
         console.error("Visualizer Error:", visErr);
       }
 
-      // MediaRecorder setup
+      // MediaRecorder setup (Higher Quality)
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
           ? "audio/ogg;codecs=opus"
           : "";
       
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      console.log("Starting high-quality recorder with mime:", mimeType || "default");
+      const recorder = new MediaRecorder(stream, {
+        mimeType: mimeType || undefined,
+        audioBitsPerSecond: 128000 // 128kbps for better quality
+      });
       mediaRef.current = recorder;
       chunksRef.current = [];
 
