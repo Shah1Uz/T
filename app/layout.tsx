@@ -145,7 +145,7 @@ export default async function RootLayout({
             suppressHydrationWarning
             className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative`}
           >
-            <NextTopLoader color="#FF385C" showSpinner={false} shadow="0 0 10px #FF385C,0 0 5px #FF385C" />
+            <NextTopLoader color="#3d5afe" showSpinner={false} shadow="0 0 10px #3d5afe,0 0 5px #3d5afe" />
             <ThemeProvider
               attribute="class"
               defaultTheme="light"
