@@ -201,15 +201,69 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
   const [duration, setDuration] = useState(initialDuration || 0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { peaks, isLoading } = useWaveformDecoder(url);
+  const [playbackVolumes, setPlaybackVolumes] = useState<number[]>([]);
+  const analyzerRef = useRef<AnalyserNode | null>(null);
+  const sourceRef = useRef<any>(null);
+  const rafRef = useRef<number | null>(null);
 
   const toggle = () => {
     if (!audioRef.current) return;
+    
+    // Initialize Analyzer on first play
+    if (!analyzerRef.current) {
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        
+        // Handle crossOrigin for external URLs
+        if (url.startsWith('http')) audioRef.current.crossOrigin = "anonymous";
+        
+        const source = audioCtx.createMediaElementSource(audioRef.current);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyzerRef.current = analyser;
+        sourceRef.current = source;
+      } catch (e) {
+        console.error("Playback Visualizer Init Error:", e);
+      }
+    }
+
     if (playing) {
       audioRef.current.pause();
     } else {
       audioRef.current.play().catch(console.error);
     }
   };
+
+  useEffect(() => {
+    const update = () => {
+      if (playing && analyzerRef.current) {
+        const dataArray = new Uint8Array(analyzerRef.current.frequencyBinCount);
+        analyzerRef.current.getByteFrequencyData(dataArray);
+        
+        // Map frequencies to the number of bars we have (30)
+        const newVols = [];
+        for (let i = 0; i < 30; i++) {
+          const sampleIdx = Math.floor((i / 30) * dataArray.length);
+          newVols.push(dataArray[sampleIdx] / 255);
+        }
+        setPlaybackVolumes(newVols);
+      }
+      rafRef.current = requestAnimationFrame(update);
+    };
+    
+    if (playing) {
+      rafRef.current = requestAnimationFrame(update);
+    } else {
+      setPlaybackVolumes([]);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    }
+    
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing]);
 
   const isMuted = variant === "muted";
 
@@ -276,12 +330,14 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
                 <div
                   key={i}
                   className={cn(
-                    "w-1 rounded-full transition-all duration-300",
+                    "w-1 rounded-full transition-all duration-75",
                     isMuted 
                       ? (played ? "bg-primary" : "bg-primary/20") 
                       : (played ? "bg-white" : "bg-white/30")
                   )}
-                  style={{ height: `${Math.max(15, peak * 90)}%` }}
+                  style={{ 
+                    height: `${Math.max(15, (peak * 70) + ((playbackVolumes[i] || 0) * 30))}%` 
+                  }}
                 />
               );
             })
