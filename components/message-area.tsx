@@ -461,19 +461,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-      // 4. Render Loop
-      let loopFacing = mode;
-      const render = () => {
-        if (ctx && sourceVideoRef.current && sourceVideoRef.current.readyState >= 2) {
-          ctx.drawImage(sourceVideoRef.current, 0, 0, 640, 640);
-        }
-        rafRef.current = requestAnimationFrame(render);
-      };
-      render();
-
-      (window as any).__updateFacing = (m: any) => { loopFacing = m; };
-
-      // 5. Connect Canvas to Output Stream
+      // 4. Create Output Stream from Canvas + Audio
       const canvasStream = canvas.captureStream(30);
       const videoTrack = canvasStream.getVideoTracks()[0];
       const audioTrack = camStream.getAudioTracks()[0];
@@ -481,10 +469,9 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       if (videoTrack) videoStream.addTrack(videoTrack);
       if (audioTrack) videoStream.addTrack(audioTrack);
 
-      // 6. Setup Recorder
+      // 5. Setup Recorder
       const types = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4', 'video/quicktime'];
       const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
-      
       const recorder = new MediaRecorder(videoStream, selectedType ? { mimeType: selectedType } : {});
       recorderRef.current = recorder;
       chunksRef.current = [];
@@ -503,22 +490,41 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
         setRecording(false);
       };
 
-      recorder.start(1000);
-      setRecording(true);
-      setRecordingTime(0);
-      setProgress(0);
-      
-      timerRef.current = setInterval(() => {
-        setRecordingTime((t) => {
-          const newTime = t + 1;
-          setProgress((newTime / MAX_DURATION) * 100);
-          if (newTime >= MAX_DURATION) {
-            recorder.stop();
-            return newTime;
+      // 6. Render Loop with Start Trigger
+      let loopFacing = mode;
+      let frameCount = 0;
+      let recordingStarted = false;
+
+      const render = () => {
+        if (ctx && sourceVideoRef.current && sourceVideoRef.current.readyState >= 2) {
+          ctx.drawImage(sourceVideoRef.current, 0, 0, 640, 640);
+          frameCount++;
+          
+          if (frameCount === 5 && !recordingStarted) {
+            recordingStarted = true;
+            recorder.start(1000);
+            setRecording(true);
+            setRecordingTime(0);
+            setProgress(0);
+            
+            timerRef.current = setInterval(() => {
+              setRecordingTime((t) => {
+                const newTime = t + 1;
+                setProgress((newTime / MAX_DURATION) * 100);
+                if (newTime >= MAX_DURATION) {
+                  recorder.stop();
+                  return newTime;
+                }
+                return newTime;
+              });
+            }, 1000);
           }
-          return newTime;
-        });
-      }, 1000);
+        }
+        rafRef.current = requestAnimationFrame(render);
+      };
+      render();
+
+      (window as any).__updateFacing = (m: any) => { loopFacing = m; };
 
     } catch (e) {
       console.error("Video record error:", e);
@@ -536,7 +542,6 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
         video: { width: 640, height: 640, aspectRatio: 1, facingMode: newMode } 
       });
       
-      // Swap audio track as well to maintain sync with new stream
       const oldAudioTrack = videoStream.getAudioTracks()[0];
       const newAudioTrack = newCamStream.getAudioTracks()[0];
       
@@ -546,7 +551,6 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       }
       if (newAudioTrack) videoStream.addTrack(newAudioTrack);
 
-      // Stop old cam stream
       if (currentCameraStream.current) {
         currentCameraStream.current.getTracks().forEach(t => t.stop());
       }
@@ -582,6 +586,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
 
   return { recording, videoBlob, videoUrl, videoStream, recordingTime, progress, facingMode, formatTime, start, stop, clear, toggleCamera };
 }
+
 
 // ─── Circular Video Player ───────────────────────────────────────────────────
 function CircularVideoPlayer({ url, onExpand }: { url: string; onExpand?: () => void }) {
