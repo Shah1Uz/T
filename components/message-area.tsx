@@ -403,50 +403,92 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [progress, setProgress] = useState(0); // 0 to 100
+  const [progress, setProgress] = useState(0); 
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const onBlobReadyRef = useRef<((blob: Blob) => void) | null>(null);
+  
+  // Pipeline Refs
+  const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const MAX_DURATION = 60; // 60 seconds limit like Telegram
+  const MAX_DURATION = 60;
+
+  const cleanupPipeline = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    if (sourceVideoRef.current) {
+      sourceVideoRef.current.srcObject = null;
+      sourceVideoRef.current.remove();
+      sourceVideoRef.current = null;
+    }
+    if (canvasRef.current) {
+      canvasRef.current.remove();
+      canvasRef.current = null;
+    }
+  }, []);
 
   const start = useCallback(async (customFacing?: "user" | "environment") => {
     try {
+      cleanupPipeline();
       const mode = customFacing || facingMode;
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          echoCancellation: true, 
-          noiseSuppression: true, 
-          autoGainControl: true 
-        }, 
-        video: { 
-          width: { ideal: 640 }, 
-          height: { ideal: 640 }, 
-          aspectRatio: { exact: 1 },
-          facingMode: mode
-        } 
-      });
-      setVideoStream(stream);
       
-      const types = [
-        'video/webm;codecs=vp8,opus',
-        'video/webm',
-        'video/mp4;codecs=avc1,mp4a.40.2',
-        'video/mp4',
-        'video/quicktime'
-      ];
+      // 1. Get User Media
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, 
+        video: { width: 640, height: 640, aspectRatio: 1, facingMode: mode } 
+      });
+      streamRef.current = stream;
+      setVideoStream(stream);
+
+      // 2. Setup Pipeline Elements
+      const sourceVideo = document.createElement('video');
+      sourceVideo.muted = true;
+      sourceVideo.playsInline = true;
+      sourceVideo.srcObject = stream;
+      sourceVideoRef.current = sourceVideo;
+      await sourceVideo.play();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 640;
+      canvasRef.current = canvas;
+      const ctx = canvas.getContext('2d', { alpha: false });
+
+      // 3. Render Loop (Sync with FacingMode)
+      let currentFacing = mode;
+      const render = () => {
+        if (ctx && sourceVideoRef.current) {
+          ctx.save();
+          if (currentFacing === "user") {
+            ctx.translate(640, 0);
+            ctx.scale(-1, 1);
+          }
+          ctx.drawImage(sourceVideoRef.current, 0, 0, 640, 640);
+          ctx.restore();
+        }
+        rafRef.current = requestAnimationFrame(render);
+      };
+      render();
+
+      // 4. Capture Stream from Canvas + Audio from Original Stream
+      const canvasStream = canvas.captureStream(30);
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) canvasStream.addTrack(audioTrack);
+
+      const types = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4', 'video/quicktime'];
       const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
       
-      const recorder = new MediaRecorder(stream, selectedType ? { mimeType: selectedType } : {});
+      const recorder = new MediaRecorder(canvasStream, selectedType ? { mimeType: selectedType } : {});
       mediaRef.current = recorder;
       chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => { 
-        if (e.data.size > 0) chunksRef.current.push(e.data); 
-      };
-      
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: selectedType || "video/webm" });
         setVideoBlob(blob);
@@ -456,9 +498,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
           onBlobReadyRef.current(blob);
           onBlobReadyRef.current = null;
         }
-        stream.getTracks().forEach((t) => t.stop());
-        setVideoStream(null);
-        if (timerRef.current) clearInterval(timerRef.current);
+        cleanupPipeline();
         setRecording(false);
       };
 
@@ -470,9 +510,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       timerRef.current = setInterval(() => {
         setRecordingTime((t) => {
           const newTime = t + 1;
-          const currentProgress = (newTime / MAX_DURATION) * 100;
-          setProgress(currentProgress);
-          
+          setProgress((newTime / MAX_DURATION) * 100);
           if (newTime >= MAX_DURATION) {
             recorder.stop();
             return newTime;
@@ -480,33 +518,46 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
           return newTime;
         });
       }, 1000);
+
+      // Expose way to update loop local state
+      (window as any).__updateFacing = (m: any) => { currentFacing = m; };
+
     } catch (e) {
       console.error("Video record error:", e);
       alert("Kamera yoki mikrofon ruxsati berilmadi");
     }
-  }, [facingMode]);
+  }, [facingMode, cleanupPipeline]);
 
   const toggleCamera = useCallback(async () => {
     const newMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newMode);
+    if ((window as any).__updateFacing) (window as any).__updateFacing(newMode);
     
-    if (recording) {
-      // If actively recording, we have to restart the stream
-      // Browser support for swapping tracks mid-recorder is poor across mobile
-      if (mediaRef.current && mediaRef.current.state === "recording") {
-        videoStream?.getTracks().forEach(t => t.stop());
-        // Resume with new mode
-        start(newMode);
-      }
-    } else if (videoStream) {
-      // Just previewing
-      videoStream.getTracks().forEach(t => t.stop());
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: newMode, width: 640, height: 640, aspectRatio: 1 } 
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 640, aspectRatio: 1, facingMode: newMode } 
       });
-      setVideoStream(stream);
+      
+      const oldVideoTrack = streamRef.current?.getVideoTracks()[0];
+      if (oldVideoTrack) oldVideoTrack.stop();
+
+      if (sourceVideoRef.current) {
+        sourceVideoRef.current.srcObject = newStream;
+        await sourceVideoRef.current.play();
+      }
+      
+      // Update streamRef for cleanup
+      const audioTrack = streamRef.current?.getAudioTracks()[0];
+      const newVideoTrack = newStream.getVideoTracks()[0];
+      const combined = new MediaStream([newVideoTrack]);
+      if (audioTrack) combined.addTrack(audioTrack);
+      streamRef.current = combined;
+      setVideoStream(combined);
+      
+    } catch (e) {
+      console.error("Switch camera error:", e);
     }
-  }, [facingMode, recording, videoStream, start]);
+  }, [facingMode]);
 
   const stop = useCallback((onReady?: (blob: Blob) => void) => {
     if (onReady) onBlobReadyRef.current = onReady;
@@ -523,7 +574,8 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
     setRecordingTime(0);
     setProgress(0);
     onBlobReadyRef.current = null;
-  }, [videoUrl]);
+    cleanupPipeline();
+  }, [videoUrl, cleanupPipeline]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
