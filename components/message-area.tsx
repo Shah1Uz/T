@@ -43,6 +43,8 @@ function useVoiceRecorder() {
         } 
       });
       
+      let updateVolumeFn: () => void;
+
       // Setup Analyser for Visualizer (Isolated)
       try {
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -52,7 +54,6 @@ function useVoiceRecorder() {
           await audioCtx.resume().catch(() => {});
         }
 
-        console.log("AudioContext state:", audioCtx.state);
         const source = audioCtx.createMediaStreamSource(stream);
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
@@ -63,7 +64,7 @@ function useVoiceRecorder() {
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
-        const updateVolume = () => {
+        updateVolumeFn = () => {
           if (!analyserRef.current || !mediaRef.current || mediaRef.current.state !== "recording") return;
           analyserRef.current.getByteFrequencyData(dataArray);
           const sum = dataArray.reduce((acc, v) => acc + v, 0);
@@ -71,17 +72,15 @@ function useVoiceRecorder() {
           const currentVol = Math.min(100, avg);
           setVolume(currentVol);
           
-          // Capture waveform data (~20 times per second)
           waveformRef.current.push(currentVol);
           if (waveformRef.current.length % 3 === 0) {
-            setWaveform([...waveformRef.current.slice(-40)]); // Keep last 40 bars for display
+            setWaveform([...waveformRef.current.slice(-30)]);
           }
 
-          requestAnimationFrame(updateVolume);
+          requestAnimationFrame(updateVolumeFn);
         };
-        updateVolume();
       } catch (visErr) {
-        console.error("Visualizer Error (non-critical):", visErr);
+        console.error("Visualizer Error:", visErr);
       }
 
       // MediaRecorder setup
@@ -91,7 +90,6 @@ function useVoiceRecorder() {
           ? "audio/ogg;codecs=opus"
           : "";
       
-      console.log("Starting recorder with mime:", mimeType || "default");
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRef.current = recorder;
       chunksRef.current = [];
@@ -102,16 +100,20 @@ function useVoiceRecorder() {
       
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        console.log("Recorded blob:", blob.size, blob.type);
         setAudioBlob(blob);
         stream.getTracks().forEach((t) => t.stop());
         if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') audioCtxRef.current.close().catch(() => {});
       };
 
-      recorder.start(1000);
+      recorder.start(100); 
       setRecording(true);
       setRecordingTime(0);
       timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+      
+      // Start visualizer loop AFTER recorder is up
+      if (updateVolumeFn!) {
+        setTimeout(() => updateVolumeFn!(), 100);
+      }
     } catch (e) {
       console.error("Critical Mic error:", e);
       alert("Mikrofonni ishlatib bo'lmadi. Iltimos ruxsatlarni tekshiring.");
@@ -154,7 +156,7 @@ function useWaveformDecoder(url: string) {
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         
         const rawData = audioBuffer.getChannelData(0); // Left channel
-        const samples = 40; // Number of bars
+        const samples = 30; // Number of bars (Reduced for mobile fit)
         const blockSize = Math.floor(rawData.length / samples);
         const filteredData = [];
         for (let i = 0; i < samples; i++) {
@@ -172,7 +174,7 @@ function useWaveformDecoder(url: string) {
       } catch (e) {
         console.error("Waveform decoding failed:", e);
         // Fallback to random peaks
-        setPeaks([...Array(40)].map(() => Math.random() * 0.8 + 0.2));
+        setPeaks([...Array(30)].map(() => Math.random() * 0.8 + 0.2));
       } finally {
         setIsLoading(false);
       }
@@ -215,7 +217,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
 
   return (
     <div className={cn(
-      "flex flex-col gap-2 min-w-[240px] p-3 rounded-[24px] backdrop-blur-md border shadow-xl transition-all",
+      "flex flex-col gap-2 min-w-[200px] max-w-[280px] p-3 rounded-[24px] backdrop-blur-md border shadow-xl transition-all",
       isMuted 
         ? "bg-muted/60 border-border/50" 
         : "bg-white/10 border-white/5"
@@ -256,7 +258,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
         </button>
         
         <div 
-          className="flex-1 flex items-center gap-0.5 h-8 cursor-pointer relative"
+          className="flex-1 flex items-center justify-between gap-[2px] h-8 cursor-pointer relative overflow-hidden"
           onClick={handleSeek}
         >
           {peaks.length > 0 ? (
