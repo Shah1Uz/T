@@ -401,37 +401,35 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [recording, setRecording] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [progress, setProgress] = useState(0); 
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onBlobReadyRef = useRef<((blob: Blob) => void) | null>(null);
-  
-  // Pipeline Refs
+  // Stable Streams & Refs
+  const [videoStream] = useState(() => new MediaStream());
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onBlobReadyRef = useRef<((blob: Blob) => void) | null>(null);
+  const currentCameraStream = useRef<MediaStream | null>(null);
 
   const MAX_DURATION = 60;
 
   const cleanupPipeline = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    if (sourceVideoRef.current) {
-      sourceVideoRef.current.srcObject = null;
-      sourceVideoRef.current.remove();
-      sourceVideoRef.current = null;
+    if (currentCameraStream.current) {
+      currentCameraStream.current.getTracks().forEach(t => t.stop());
+      currentCameraStream.current = null;
     }
-    if (canvasRef.current) {
-      canvasRef.current.remove();
-      canvasRef.current = null;
-    }
-  }, []);
+    videoStream.getTracks().forEach(t => {
+      t.stop();
+      videoStream.removeTrack(t);
+    });
+    if (sourceVideoRef.current) sourceVideoRef.current.srcObject = null;
+  }, [videoStream]);
 
   const start = useCallback(async (customFacing?: "user" | "environment") => {
     try {
@@ -439,33 +437,36 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       const mode = customFacing || facingMode;
       
       // 1. Get User Media
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const camStream = await navigator.mediaDevices.getUserMedia({ 
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, 
         video: { width: 640, height: 640, aspectRatio: 1, facingMode: mode } 
       });
-      streamRef.current = stream;
-      setVideoStream(stream);
+      currentCameraStream.current = camStream;
 
-      // 2. Setup Pipeline Elements
-      const sourceVideo = document.createElement('video');
-      sourceVideo.muted = true;
-      sourceVideo.playsInline = true;
-      sourceVideo.srcObject = stream;
-      sourceVideoRef.current = sourceVideo;
-      await sourceVideo.play();
+      // 2. Setup Hidden Source Video
+      if (!sourceVideoRef.current) {
+        sourceVideoRef.current = document.createElement('video');
+        sourceVideoRef.current.muted = true;
+        sourceVideoRef.current.playsInline = true;
+      }
+      sourceVideoRef.current.srcObject = camStream;
+      await sourceVideoRef.current.play();
 
-      const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 640;
-      canvasRef.current = canvas;
-      const ctx = canvas.getContext('2d', { alpha: false });
+      // 3. Setup Processing Canvas
+      if (!canvasRef.current) {
+        canvasRef.current = document.createElement('canvas');
+        canvasRef.current.width = 640;
+        canvasRef.current.height = 640;
+      }
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
-      // 3. Render Loop (Sync with FacingMode)
-      let currentFacing = mode;
+      // 4. Render Loop
+      let loopFacing = mode;
       const render = () => {
         if (ctx && sourceVideoRef.current) {
           ctx.save();
-          if (currentFacing === "user") {
+          if (loopFacing === "user") {
             ctx.translate(640, 0);
             ctx.scale(-1, 1);
           }
@@ -476,16 +477,22 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       };
       render();
 
-      // 4. Capture Stream from Canvas + Audio from Original Stream
-      const canvasStream = canvas.captureStream(30);
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) canvasStream.addTrack(audioTrack);
+      (window as any).__updateFacing = (m: any) => { loopFacing = m; };
 
+      // 5. Connect Canvas to Output Stream
+      const canvasStream = canvas.captureStream(30);
+      const videoTrack = canvasStream.getVideoTracks()[0];
+      const audioTrack = camStream.getAudioTracks()[0];
+      
+      if (videoTrack) videoStream.addTrack(videoTrack);
+      if (audioTrack) videoStream.addTrack(audioTrack);
+
+      // 6. Setup Recorder
       const types = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4', 'video/quicktime'];
       const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
       
-      const recorder = new MediaRecorder(canvasStream, selectedType ? { mimeType: selectedType } : {});
-      mediaRef.current = recorder;
+      const recorder = new MediaRecorder(videoStream, selectedType ? { mimeType: selectedType } : {});
+      recorderRef.current = recorder;
       chunksRef.current = [];
 
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
@@ -519,14 +526,11 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
         });
       }, 1000);
 
-      // Expose way to update loop local state
-      (window as any).__updateFacing = (m: any) => { currentFacing = m; };
-
     } catch (e) {
       console.error("Video record error:", e);
       alert("Kamera yoki mikrofon ruxsati berilmadi");
     }
-  }, [facingMode, cleanupPipeline]);
+  }, [facingMode, cleanupPipeline, videoStream]);
 
   const toggleCamera = useCallback(async () => {
     const newMode = facingMode === "user" ? "environment" : "user";
@@ -534,34 +538,38 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
     if ((window as any).__updateFacing) (window as any).__updateFacing(newMode);
     
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({ 
+      const newCamStream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: 640, height: 640, aspectRatio: 1, facingMode: newMode } 
       });
       
-      const oldVideoTrack = streamRef.current?.getVideoTracks()[0];
-      if (oldVideoTrack) oldVideoTrack.stop();
+      // Swap audio track as well to maintain sync with new stream
+      const oldAudioTrack = videoStream.getAudioTracks()[0];
+      const newAudioTrack = newCamStream.getAudioTracks()[0];
+      
+      if (oldAudioTrack) {
+        oldAudioTrack.stop();
+        videoStream.removeTrack(oldAudioTrack);
+      }
+      if (newAudioTrack) videoStream.addTrack(newAudioTrack);
+
+      // Stop old cam stream
+      if (currentCameraStream.current) {
+        currentCameraStream.current.getTracks().forEach(t => t.stop());
+      }
+      currentCameraStream.current = newCamStream;
 
       if (sourceVideoRef.current) {
-        sourceVideoRef.current.srcObject = newStream;
+        sourceVideoRef.current.srcObject = newCamStream;
         await sourceVideoRef.current.play();
       }
-      
-      // Update streamRef for cleanup
-      const audioTrack = streamRef.current?.getAudioTracks()[0];
-      const newVideoTrack = newStream.getVideoTracks()[0];
-      const combined = new MediaStream([newVideoTrack]);
-      if (audioTrack) combined.addTrack(audioTrack);
-      streamRef.current = combined;
-      setVideoStream(combined);
-      
     } catch (e) {
       console.error("Switch camera error:", e);
     }
-  }, [facingMode]);
+  }, [facingMode, videoStream]);
 
   const stop = useCallback((onReady?: (blob: Blob) => void) => {
     if (onReady) onBlobReadyRef.current = onReady;
-    mediaRef.current?.stop();
+    recorderRef.current?.stop();
     setRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
@@ -570,7 +578,6 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
     if (videoUrl) URL.revokeObjectURL(videoUrl);
     setVideoBlob(null);
     setVideoUrl(null);
-    setVideoStream(null);
     setRecordingTime(0);
     setProgress(0);
     onBlobReadyRef.current = null;
