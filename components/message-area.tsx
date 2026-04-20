@@ -8,7 +8,7 @@ import Link from "next/link";
 import {
   Send, Image as ImageIcon, ArrowLeft, Mic, MicOff,
   Square, Play, Pause, X, Check, CheckCheck, Phone, PhoneOff, Video, Smile, Loader2, Trash2, VolumeX, Volume2,
-  Heart, ThumbsUp, Laugh, Plus, MessageCircle
+  Heart, ThumbsUp, Laugh, Plus, MessageCircle, Home
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -573,12 +573,15 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
     <>
     <div className="flex-1 flex flex-col min-h-0 h-full bg-background dark:bg-slate-950 overflow-hidden relative">
       {/* Header */}
-      <div className="flex-none z-40 px-4 py-3 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-3 shadow-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 -ml-1 h-10 w-10 rounded-2xl hover:bg-muted/50 active:scale-90 transition-all">
-            <Link href="/chat"><ArrowLeft className="h-6 w-6" /></Link>
+      <div className="flex-none z-40 px-3 py-2.5 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-2 shadow-sm">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 h-10 w-10 rounded-2xl bg-secondary/80 hover:bg-secondary active:scale-90 transition-all border border-border/20">
+            <Link href="/chat"><ArrowLeft className="h-6 w-6 text-primary" /></Link>
           </Button>
-          <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-3 min-w-0 hover:bg-muted/30 p-1 rounded-2xl transition-all group/header active:scale-95">
+          <Button variant="ghost" size="icon" asChild className="hidden md:flex shrink-0 h-10 w-10 rounded-2xl bg-secondary/40 hover:bg-secondary transition-all">
+            <Link href="/"><Home className="h-5 w-5" /></Link>
+          </Button>
+          <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-2.5 min-w-0 hover:bg-muted/30 p-1 rounded-2xl transition-all group/header active:scale-95">
             <div className="relative shrink-0">
               <Avatar className="h-11 w-11 border-2 border-background shadow-md group-hover/header:border-primary/30 transition-all">
                 <AvatarImage src={otherUser?.imageUrl || ""} alt={otherName} className="object-cover" />
@@ -604,6 +607,9 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
           </Link>
         </div>
         <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="icon" asChild className="md:hidden h-10 w-10 rounded-2xl bg-secondary/40 hover:bg-secondary active:scale-95 transition-all">
+            <Link href="/"><Home className="h-5 w-5" /></Link>
+          </Button>
           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all">
             <Phone className="h-5 w-5" />
           </Button>
@@ -614,8 +620,8 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none bg-muted/20 dark:bg-slate-900/40">
-        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none bg-muted/20 dark:bg-slate-900/40 flex flex-col">
+        <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6 flex-1 flex flex-col justify-end">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 text-muted-foreground opacity-50">
             <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-4">

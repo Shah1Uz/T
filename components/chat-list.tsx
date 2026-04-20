@@ -2,8 +2,9 @@
 
 import { useUser } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Image as ImageIcon, Video, Mic } from "lucide-react";
+import { MessageCircle, Image as ImageIcon, Video, Mic, Home, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/context/locale-context";
 import { cn } from "@/lib/utils";
@@ -42,13 +43,18 @@ export function ChatList({ chats: initialChats, activeChatId }: ChatListProps) {
 
   return (
     <div className="flex flex-col h-full bg-background dark:bg-slate-950">
-      <div className="px-6 py-5 border-b border-border/50 bg-card/50 backdrop-blur-md sticky top-0 z-10">
-        <h2 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
-          {t("chat.title")}
-          <span className="h-6 px-2 rounded-full bg-primary/10 text-primary text-[12px] font-black flex items-center justify-center shadow-inner">
-            {chats.length}
-          </span>
-        </h2>
+      <div className="px-5 py-4 border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-10 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" asChild className="h-10 w-10 rounded-2xl bg-secondary/50 hover:bg-secondary active:scale-95 transition-all">
+            <Link href="/"><Home className="h-5 w-5" /></Link>
+          </Button>
+          <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-2">
+            {t("chat.title")}
+            <span className="h-5 px-1.5 rounded-lg bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center">
+              {chats.length}
+            </span>
+          </h2>
+        </div>
       </div>
       
       <ScrollArea className="flex-1">
