@@ -405,8 +405,8 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [progress, setProgress] = useState(0); 
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   
-  // Stable Streams & Refs
-  const [videoStream] = useState(() => new MediaStream());
+  // Stable Refs
+  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const sourceVideoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -424,11 +424,14 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       currentCameraStream.current.getTracks().forEach(t => t.stop());
       currentCameraStream.current = null;
     }
-    videoStream.getTracks().forEach(t => {
-      t.stop();
-      videoStream.removeTrack(t);
-    });
-    if (sourceVideoRef.current) sourceVideoRef.current.srcObject = null;
+    if (videoStream) {
+      videoStream.getTracks().forEach(t => t.stop());
+      setVideoStream(null);
+    }
+    if (sourceVideoRef.current) {
+      sourceVideoRef.current.srcObject = null;
+      sourceVideoRef.current.pause();
+    }
   }, [videoStream]);
 
   const start = useCallback(async (customFacing?: "user" | "environment") => {
@@ -466,13 +469,16 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       const videoTrack = canvasStream.getVideoTracks()[0];
       const audioTrack = camStream.getAudioTracks()[0];
       
-      if (videoTrack) videoStream.addTrack(videoTrack);
-      if (audioTrack) videoStream.addTrack(audioTrack);
+      // IMPORTANT: Create a NEW MediaStream and set it to state
+      const outputStream = new MediaStream();
+      if (videoTrack) outputStream.addTrack(videoTrack);
+      if (audioTrack) outputStream.addTrack(audioTrack);
+      setVideoStream(outputStream);
 
       // 5. Setup Recorder
       const types = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4', 'video/quicktime'];
       const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
-      const recorder = new MediaRecorder(videoStream, selectedType ? { mimeType: selectedType } : {});
+      const recorder = new MediaRecorder(outputStream, selectedType ? { mimeType: selectedType } : {});
       recorderRef.current = recorder;
       chunksRef.current = [];
 
@@ -490,22 +496,24 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
         setRecording(false);
       };
 
+      setRecording(true);
+      setRecordingTime(0);
+      setProgress(0);
+
       // 6. Render Loop with Start Trigger
-      let loopFacing = mode;
       let frameCount = 0;
       let recordingStarted = false;
 
       const render = () => {
-        if (ctx && sourceVideoRef.current && sourceVideoRef.current.readyState >= 2) {
-          ctx.drawImage(sourceVideoRef.current, 0, 0, 640, 640);
+        const video = sourceVideoRef.current;
+        if (ctx && video && video.readyState >= 2 && video.currentTime > 0) {
+          ctx.drawImage(video, 0, 0, 640, 640);
           frameCount++;
           
-          if (frameCount === 5 && !recordingStarted) {
+          // Wait for 10 solid frames to avoid initial black flash
+          if (frameCount === 10 && !recordingStarted) {
             recordingStarted = true;
             recorder.start(1000);
-            setRecording(true);
-            setRecordingTime(0);
-            setProgress(0);
             
             timerRef.current = setInterval(() => {
               setRecordingTime((t) => {
@@ -519,38 +527,30 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
               });
             }, 1000);
           }
+        } else if (ctx) {
+          // While warming up, show a dark grey background so it's not pure black/transparent
+          ctx.fillStyle = "#1e293b";
+          ctx.fillRect(0, 0, 640, 640);
         }
         rafRef.current = requestAnimationFrame(render);
       };
       render();
 
-      (window as any).__updateFacing = (m: any) => { loopFacing = m; };
-
     } catch (e) {
       console.error("Video record error:", e);
       alert("Kamera yoki mikrofon ruxsati berilmadi");
     }
-  }, [facingMode, cleanupPipeline, videoStream]);
+  }, [facingMode, cleanupPipeline]);
 
   const toggleCamera = useCallback(async () => {
     const newMode = facingMode === "user" ? "environment" : "user";
     setFacingMode(newMode);
-    if ((window as any).__updateFacing) (window as any).__updateFacing(newMode);
     
     try {
       const newCamStream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: 640, height: 640, aspectRatio: 1, facingMode: newMode } 
       });
       
-      const oldAudioTrack = videoStream.getAudioTracks()[0];
-      const newAudioTrack = newCamStream.getAudioTracks()[0];
-      
-      if (oldAudioTrack) {
-        oldAudioTrack.stop();
-        videoStream.removeTrack(oldAudioTrack);
-      }
-      if (newAudioTrack) videoStream.addTrack(newAudioTrack);
-
       if (currentCameraStream.current) {
         currentCameraStream.current.getTracks().forEach(t => t.stop());
       }
@@ -559,6 +559,14 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       if (sourceVideoRef.current) {
         sourceVideoRef.current.srcObject = newCamStream;
         await sourceVideoRef.current.play();
+      }
+
+      // Update the output stream with the new audio track if recording is live
+      if (videoStream) {
+        const newAudioTrack = newCamStream.getAudioTracks()[0];
+        const oldAudioTrack = videoStream.getAudioTracks()[0];
+        if (oldAudioTrack) videoStream.removeTrack(oldAudioTrack);
+        if (newAudioTrack) videoStream.addTrack(newAudioTrack);
       }
     } catch (e) {
       console.error("Switch camera error:", e);
