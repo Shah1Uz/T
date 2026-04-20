@@ -402,18 +402,36 @@ function useVideoRecorder() {
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [progress, setProgress] = useState(0); // 0 to 100
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const MAX_DURATION = 60; // 60 seconds limit like Telegram
+
   const start = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true, 
-        video: { width: { ideal: 480 }, height: { ideal: 480 }, facingMode: "user" } 
+        audio: { 
+          echoCancellation: true, 
+          noiseSuppression: true, 
+          autoGainControl: true 
+        }, 
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 640 }, 
+          aspectRatio: { exact: 1 }, // Try to get square
+          facingMode: "user" 
+        } 
       });
       setVideoStream(stream);
-      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      
+      const options = { mimeType: 'video/webm;codecs=vp8,opus' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        options.mimeType = 'video/webm';
+      }
+
+      const recorder = new MediaRecorder(stream, options);
       mediaRef.current = recorder;
       chunksRef.current = [];
 
@@ -422,18 +440,34 @@ function useVideoRecorder() {
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
         setVideoBlob(blob);
         stream.getTracks().forEach((t) => t.stop());
         setVideoStream(null);
         if (timerRef.current) clearInterval(timerRef.current);
+        setRecording(false);
       };
 
       recorder.start(1000);
       setRecording(true);
       setRecordingTime(0);
-      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+      setProgress(0);
+      
+      timerRef.current = setInterval(() => {
+        setRecordingTime((t) => {
+          const newTime = t + 1;
+          const currentProgress = (newTime / MAX_DURATION) * 100;
+          setProgress(currentProgress);
+          
+          if (newTime >= MAX_DURATION) {
+            recorder.stop();
+            return newTime;
+          }
+          return newTime;
+        });
+      }, 1000);
     } catch (e) {
+      console.error("Video record error:", e);
       alert("Kamera yoki mikrofon ruxsati berilmadi");
     }
   }, []);
@@ -448,11 +482,12 @@ function useVideoRecorder() {
     setVideoBlob(null);
     setVideoStream(null);
     setRecordingTime(0);
+    setProgress(0);
   }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  return { recording, videoBlob, videoStream, recordingTime, formatTime, start, stop, clear };
+  return { recording, videoBlob, videoStream, recordingTime, progress, formatTime, start, stop, clear };
 }
 
 // ─── Circular Video Player ───────────────────────────────────────────────────
@@ -949,20 +984,90 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
         </div>
       </div>
 
-      {/* Video recording in progress */}
-      {video.recording && (
-        <div className="px-4 py-3 border-t bg-black/90 flex flex-col items-center gap-3">
-          <div className="relative w-48 h-48 rounded-full overflow-hidden border-2 border-primary shadow-2xl">
-            <video ref={videoPreviewRef} autoPlay muted playsInline className="w-full h-full object-cover" />
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-red-500/80 px-2.5 py-1 rounded-full text-[10px] font-bold text-white animate-pulse">
-               <div className="h-1.5 w-1.5 rounded-full bg-white" /> REC {video.formatTime(video.recordingTime)}
+      {/* Video recording in progress (Telegram Style) */}
+      <AnimatePresence>
+        {video.recording && (
+          <motion.div 
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed inset-x-0 bottom-0 z-[100] px-4 py-8 bg-gradient-to-t from-black via-black/80 to-transparent flex flex-col items-center gap-6"
+          >
+            <div className="relative h-64 w-64 md:h-72 md:w-72">
+              {/* Progress Ring */}
+              <svg className="absolute inset-0 -rotate-90 w-full h-full drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="48%"
+                  className="fill-none stroke-white/20 stroke-[3px]"
+                />
+                <motion.circle
+                  cx="50%"
+                  cy="50%"
+                  r="48%"
+                  className="fill-none stroke-primary stroke-[4px]"
+                  strokeDasharray="100 100"
+                  animate={{ strokeDashoffset: 100 - video.progress }}
+                  transition={{ duration: 1, ease: "linear" }}
+                  strokeLinecap="round"
+                  pathLength="100"
+                />
+              </svg>
+
+              {/* Video Preview */}
+              <div className="absolute inset-[6px] rounded-full overflow-hidden bg-black shadow-2xl">
+                <video 
+                  ref={videoPreviewRef} 
+                  autoPlay 
+                  muted 
+                  playsInline 
+                  className="w-full h-full object-cover scale-x-[-1]" // Mirroring for front camera
+                />
+                
+                {/* Recording Indicator */}
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-red-600/90 px-3 py-1.5 rounded-full text-[11px] font-black text-white shadow-lg animate-pulse">
+                  <div className="h-2 w-2 rounded-full bg-white shadow-[0_0_5px_white]" />
+                  <span>{video.formatTime(video.recordingTime)} / 01:00</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <Button size="sm" variant="destructive" onClick={video.stop} className="rounded-full h-12 w-12 p-0 shadow-lg">
-            <Square className="h-5 w-5" />
-          </Button>
-        </div>
-      )}
+
+            <div className="flex items-center gap-6">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={video.stop}
+                className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
+              >
+                <X className="h-6 w-6" />
+              </Button>
+
+              <div className="flex flex-col items-center gap-1">
+                <Button 
+                  size="icon" 
+                  onClick={video.stop} 
+                  className="h-20 w-20 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_20px_rgba(59,130,246,0.4)] border-4 border-white/10 group transition-all"
+                >
+                  <Send className="h-8 w-8 text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </Button>
+                <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">{locale === 'uz' ? 'Yuborish' : 'Send'}</span>
+              </div>
+
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
+                onClick={video.clear}
+              >
+                <Trash2 className="h-6 w-6" />
+              </Button>
+            </div>
+            
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">{locale === 'uz' ? 'Videoxabar yozilmoqda' : 'Recording video message'}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Video preview before sending */}
       {video.videoBlob && !video.recording && (
