@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/context/locale-context";
 import { MapPin, X, ChevronLeft, ChevronRight, Maximize2, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ImageGalleryProps {
   listing: any;
@@ -55,17 +56,42 @@ export default function ImageGallery({ listing }: ImageGalleryProps) {
 
   return (
     <>
-      {/* Main Preview Container */}
-      <div className="group relative rounded-[32px] overflow-hidden bg-muted shadow-2xl border border-border cursor-pointer" onClick={() => openFullscreen(0)}>
+      {/* Main Preview Container - Interactive Carousel */}
+      <div 
+        className="group relative rounded-[32px] overflow-hidden bg-muted shadow-2xl border border-border cursor-pointer h-full"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          // Click center 40% to open lightbox, sides to navigate
+          if (x > rect.width * 0.3 && x < rect.width * 0.7) {
+            openFullscreen(currentIndex);
+          } else if (x >= rect.width * 0.7) {
+            goToNext(e as any);
+          } else {
+            goToPrev(e as any);
+          }
+        }}
+      >
         <div className="relative aspect-[16/9] md:aspect-[21/9] w-full">
-          <Image 
-            src={images[0]?.url} 
-            alt={listing.title} 
-            fill 
-            className="object-cover transition-transform duration-1000 group-hover:scale-105"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity group-hover:opacity-90"></div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0"
+            >
+              <Image 
+                src={images[currentIndex]?.url} 
+                alt={listing.title} 
+                fill 
+                className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                priority
+              />
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity group-hover:opacity-90 pointer-events-none"></div>
           
           <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10">
             <Badge className="bg-card/95 backdrop-blur-sm text-foreground hover:bg-white px-2.5 py-1 rounded-lg font-bold shadow-md border-none text-[10px] uppercase tracking-tighter">
@@ -76,16 +102,57 @@ export default function ImageGallery({ listing }: ImageGalleryProps) {
             </Badge>
           </div>
 
+          {/* Navigation Arrows */}
+          {images.length > 1 && (
+            <>
+              <button 
+                onClick={goToPrev}
+                className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all hover:bg-black/60 scale-90 hover:scale-100"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button 
+                onClick={goToNext}
+                className="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 opacity-0 group-hover:opacity-100 transition-all hover:bg-black/60 scale-90 hover:scale-100"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
           {/* Show all photos button overlay */}
           <div className="absolute top-4 right-4 z-10">
-            <Button variant="secondary" size="sm" className="h-8 bg-card/90 backdrop-blur-sm hover:bg-white text-foreground shadow-md rounded-lg font-bold flex items-center gap-1.5 px-3">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openFullscreen(currentIndex);
+              }}
+              className="h-8 bg-card/90 backdrop-blur-sm hover:bg-white text-foreground shadow-md rounded-lg font-bold flex items-center gap-1.5 px-3"
+            >
               <ImageIcon className="w-3.5 h-3.5" />
               <span className="text-[11px]">{t("listing.photos")} ({images.length})</span>
             </Button>
           </div>
 
+          {/* Image Dots / Count indicator at bottom center */}
+          {images.length > 1 && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3">
+              <div className="flex gap-2 p-2 bg-black/30 backdrop-blur-md rounded-full border border-white/10">
+                {images.slice(0, 8).map((_: any, i: number) => (
+                  <div 
+                    key={i} 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-             <div className="bg-black/50 backdrop-blur-sm p-4 rounded-full text-white">
+             <div className="bg-black/50 backdrop-blur-sm p-4 rounded-full text-white transform scale-90 group-hover:scale-100 transition-transform">
                <Maximize2 className="w-8 h-8" />
              </div>
           </div>
