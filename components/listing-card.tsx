@@ -9,8 +9,9 @@ import {
   MapPin, Heart, Phone, BedDouble, 
   Maximize2, Layers, Trash2, TrainFront,
   Share2, ArrowUpRight, CheckCircle2,
-  Calendar, Sparkles, Zap
+  Calendar, Sparkles, Zap, ChevronLeft, ChevronRight
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/context/locale-context";
 import VerifiedBadge from "@/components/verified-badge";
@@ -25,6 +26,10 @@ export default function ListingCard({ listing }: { listing: any }) {
   const [rating, setRating] = useState(listing.ratingAverage || 0);
   const [ratingCount, setRatingCount] = useState(listing.ratingCount || 0);
   const [mounted, setMounted] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images = (listing as any).images || [];
+  const imageCount = images.length;
 
   const handleRate = async (newRating: number) => {
     if (!isSignedIn) return;
@@ -53,9 +58,17 @@ export default function ListingCard({ listing }: { listing: any }) {
     </div>
   );
 
-  const images = (listing as any).images || [];
-  const primaryImage = images[0]?.url || "/placeholder-property.jpg";
-  const imageCount = images.length;
+  const handleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev + 1) % imageCount);
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev === 0 ? imageCount - 1 : prev - 1));
+  };
 
   const perM2 = Math.round(listing.price / (listing.area || 50));
   const targetLabel = listing.landmark || `${listing.location?.name || ""}`;
@@ -89,15 +102,49 @@ export default function ListingCard({ listing }: { listing: any }) {
     }`}>
       
       {/* Image Section */}
-      <Link href={`/listings/${listing.id}`} className="relative w-full md:w-[280px] lg:w-[340px] xl:w-[380px] 3xl:w-[420px] shrink-0 aspect-[16/10] md:aspect-auto overflow-hidden md:m-2 rounded-t-[32px] md:rounded-[24px]">
-        <Image
-          src={primaryImage}
-          alt={listing.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-        />
+      <Link href={`/listings/${listing.id}`} className="relative w-full md:w-[280px] lg:w-[340px] xl:w-[380px] 3xl:w-[420px] shrink-0 aspect-[16/10] md:aspect-auto overflow-hidden md:m-2 rounded-t-[32px] md:rounded-[24px] bg-muted group/image">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentImageIndex}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="absolute inset-0"
+          >
+            <Image
+              src={images[currentImageIndex]?.url || "/placeholder-property.jpg"}
+              alt={listing.title}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Navigation Arrows */}
+        {imageCount > 1 && (
+          <>
+            <button 
+              onClick={handlePrev}
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 hover:bg-black/60 transition-all opacity-0 group-hover/image:opacity-100 z-20 hidden md:flex"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button 
+              onClick={handleNext}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 hover:bg-black/60 transition-all opacity-0 group-hover/image:opacity-100 z-20 hidden md:flex"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+
+            {/* Mobile Touch Navigation (Invisible zones) */}
+            <div className="absolute inset-y-0 left-0 w-1/4 z-10 md:hidden" onClick={handlePrev} />
+            <div className="absolute inset-y-0 right-0 w-1/4 z-10 md:hidden" onClick={handleNext} />
+          </>
+        )}
+
         {/* Type Badge Overlay */}
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-20">
           <span className={`text-[11px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-md ${
             listing.type === "sale"
               ? "bg-amber-400/90 text-amber-950"
@@ -109,7 +156,7 @@ export default function ListingCard({ listing }: { listing: any }) {
 
         {/* Plan Badge Overlay */}
         {listing.user?.plan && listing.user.plan !== "FREE" && (
-          <div className="absolute top-4 right-4 z-10">
+          <div className="absolute top-4 right-4 z-20">
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-lg backdrop-blur-md border ${
               listing.user.plan === "VIP" 
                 ? "bg-amber-500 text-white border-amber-400" 
@@ -125,10 +172,21 @@ export default function ListingCard({ listing }: { listing: any }) {
           </div>
         )}
 
-        {/* Count Badge Overlay */}
+        {/* Count Badge Overlay & Dots */}
         {imageCount > 1 && (
-          <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1.5 rounded-xl border border-white/10 z-10">
-            1 / {imageCount}
+          <div className="absolute bottom-4 inset-x-4 flex items-center justify-between z-20">
+            <div className="flex gap-1.5 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
+              {images.slice(0, 5).map((_: any, i: number) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"}`}
+                />
+              ))}
+              {imageCount > 5 && <div className="w-1.5 h-1.5 rounded-full bg-white/20" />}
+            </div>
+            <div className="bg-black/40 backdrop-blur-md text-white text-[11px] font-black px-3 py-1.5 rounded-xl border border-white/10 tabular-nums">
+              {currentImageIndex + 1} / {imageCount}
+            </div>
           </div>
         )}
       </Link>
