@@ -101,8 +101,20 @@ export default function ListingCard({ listing }: { listing: any }) {
           : "border-border/60 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)]"
     }`}>
       
-      {/* Image Section */}
-      <Link href={`/listings/${listing.id}`} className="relative w-full md:w-[280px] lg:w-[340px] xl:w-[380px] 3xl:w-[420px] shrink-0 aspect-[16/10] md:aspect-auto overflow-hidden md:m-2 rounded-t-[32px] md:rounded-[24px] bg-muted group/image">
+      {/* Image Section - Interactive Carousel (Not a Link anymore) */}
+      <div 
+        className="relative w-full md:w-[280px] lg:w-[340px] xl:w-[380px] 3xl:w-[420px] shrink-0 aspect-[16/10] md:aspect-auto overflow-hidden md:m-2 rounded-t-[32px] md:rounded-[24px] bg-muted group/image cursor-pointer"
+        onClick={(e) => {
+          // If not clicking arrows, click right half for next, left half for prev
+          const rect = e.currentTarget.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          if (x > rect.width / 2) {
+            handleNext(e);
+          } else {
+            handlePrev(e);
+          }
+        }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentImageIndex}
@@ -189,7 +201,7 @@ export default function ListingCard({ listing }: { listing: any }) {
             </div>
           </div>
         )}
-      </Link>
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col p-5 md:p-6 lg:p-8 gap-4 min-w-0">
@@ -197,27 +209,31 @@ export default function ListingCard({ listing }: { listing: any }) {
         {/* Top Header: Price & Title */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
-                 <span className="text-2xl sm:text-3xl font-black text-foreground tabular-nums">
-                   {(listing?.price || 0).toLocaleString("en-US")}
-                   <span className="text-xl font-bold ml-1.5 uppercase">USD</span>
-                 </span>
-                 <span className="text-sm font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">
-                    {perM2.toLocaleString()} USD/m²
-                 </span>
-                 {/* Views Badge for Owner */}
-                 {user?.id === listing.userId && listing._count?.views !== undefined && (
-                   <span className="text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full flex items-center gap-1 border border-blue-500/20 shadow-sm animate-in fade-in slide-in-from-top-1">
-                     <Maximize2 className="h-2.5 w-2.5 rotate-45" />
-                     {listing._count.views} {t("common.views") || "ko'rishlar"}
-                   </span>
-                 )}
-              </div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-tight flex items-center gap-2">
-                  {listing.title}
-                  {listing.user?.plan === "VIP" && <VerifiedBadge />}
-                </h3>
+               <Link href={`/listings/${listing.id}`} className="block hover:opacity-80 transition-opacity">
+                 <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
+                    <span className="text-2xl sm:text-3xl font-black text-foreground tabular-nums">
+                      {(listing?.price || 0).toLocaleString("en-US")}
+                      <span className="text-xl font-bold ml-1.5 uppercase">USD</span>
+                    </span>
+                    <span className="text-sm font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-lg">
+                       {perM2.toLocaleString()} USD/m²
+                    </span>
+                    {/* Views Badge for Owner */}
+                    {user?.id === listing.userId && listing._count?.views !== undefined && (
+                      <span className="text-[10px] font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full flex items-center gap-1 border border-blue-500/20 shadow-sm animate-in fade-in slide-in-from-top-1">
+                        <Maximize2 className="h-2.5 w-2.5 rotate-45" />
+                        {listing._count.views} {t("common.views") || "ko'rishlar"}
+                      </span>
+                    )}
+                 </div>
+               </Link>
+               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                 <Link href={`/listings/${listing.id}`}>
+                   <h3 className="text-xl font-black text-foreground group-hover:text-primary transition-colors line-clamp-1 leading-tight flex items-center gap-2">
+                     {listing.title}
+                     {listing.user?.plan === "VIP" && <VerifiedBadge />}
+                   </h3>
+                 </Link>
                 {listing.user?.plan !== "VIP" && (
                   <div 
                     className="flex items-center gap-1 bg-muted/40 px-3 py-1.5 rounded-xl border border-border/40 shrink-0"
