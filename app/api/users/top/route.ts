@@ -4,6 +4,11 @@ import prisma from "@/lib/prisma";
 export async function GET() {
   try {
     const topSellers = await prisma.user.findMany({
+      where: {
+        listings: {
+          some: {}
+        }
+      },
       include: {
         listings: {
           select: { id: true }
