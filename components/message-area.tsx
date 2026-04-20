@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import {
   Send, Image as ImageIcon, ArrowLeft, Mic, MicOff,
-  Square, Play, Pause, X, Check, CheckCheck, Phone, PhoneOff, Video, Smile, Loader2, Trash2, VolumeX, Volume2,
+  Square, Play, Pause, X, Check, CheckCheck, Phone, PhoneOff, Video, Smile, Loader2, Trash2, VolumeX, Volume2, Expand,
   Heart, ThumbsUp, Laugh, Plus, MessageCircle, Home
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -505,7 +505,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
 }
 
 // ─── Circular Video Player ───────────────────────────────────────────────────
-function CircularVideoPlayer({ url }: { url: string }) {
+function CircularVideoPlayer({ url, onExpand }: { url: string; onExpand?: () => void }) {
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -520,7 +520,7 @@ function CircularVideoPlayer({ url }: { url: string }) {
   return (
     <div 
       className="relative w-56 h-56 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-primary/20 shadow-xl bg-black cursor-pointer group shrink-0 mb-1"
-      onClick={toggleMute}
+      onClick={onExpand}
     >
       <video 
         ref={videoRef}
@@ -531,12 +531,61 @@ function CircularVideoPlayer({ url }: { url: string }) {
         playsInline 
         className="w-full h-full object-cover" 
       />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
-        <div className="bg-black/40 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-90 group-hover:scale-100">
-          {muted ? <VolumeX className="h-6 w-6 text-white" /> : <Volume2 className="h-6 w-6 text-white" />}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+        <div className="absolute bottom-4 right-1/2 translate-x-1/2 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMute}
+            className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 hover:bg-black/60 transition-all opacity-0 group-hover:opacity-100"
+          >
+            {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+          </Button>
+          <div className="bg-black/40 backdrop-blur-sm p-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 scale-90 group-hover:scale-100">
+             <Expand className="h-6 w-6 text-white" />
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Expanded Video Modal ───────────────────────────────────────────────────
+function ExpandedVideoModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <motion.div 
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.5, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative max-w-2xl w-full aspect-square rounded-full overflow-hidden border-4 border-white/20 shadow-2xl bg-black"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <video 
+          src={url} 
+          autoPlay 
+          controls 
+          loop 
+          playsInline 
+          className="w-full h-full object-cover" 
+        />
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={onClose}
+          className="absolute top-10 right-10 h-14 w-14 rounded-full bg-black/40 backdrop-blur-md text-white border border-white/10 hover:bg-black/60 z-30"
+        >
+          <X className="h-8 w-8" />
+        </Button>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -548,6 +597,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
   const [isSending, setIsSending] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [imagePreview, setImagePreview] = useState<{ file: File; url: string } | null>(null);
+  const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
   const [otherUserStatus, setOtherUserStatus] = useState<any>(null);
   const [activeReactionPicker, setActiveReactionPicker] = useState<string | null>(null);
   const [showFullPickerFor, setShowFullPickerFor] = useState<string | null>(null);
@@ -896,7 +946,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
                     {/* Video message */}
                     {msg.videoUrl && (
-                      <CircularVideoPlayer url={msg.videoUrl} />
+                      <CircularVideoPlayer url={msg.videoUrl} onExpand={() => setExpandedVideo(msg.videoUrl)} />
                     )}
 
                     {/* Text */}
@@ -1102,7 +1152,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       {video.videoBlob && !video.recording && (
         <div className="px-4 py-3 border-t bg-muted/40 flex flex-col items-center gap-3">
           <div className="pointer-events-none">
-            <CircularVideoPlayer url={URL.createObjectURL(video.videoBlob)} />
+            <CircularVideoPlayer url={URL.createObjectURL(video.videoBlob)} onExpand={() => setExpandedVideo(URL.createObjectURL(video.videoBlob!))} />
           </div>
           <div className="flex gap-2 w-full justify-center">
             <Button variant="ghost" onClick={video.clear} className="rounded-xl h-10 px-6 text-muted-foreground">
@@ -1308,7 +1358,13 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
           </Button>
         </motion.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {expandedVideo && (
+          <ExpandedVideoModal url={expandedVideo} onClose={() => setExpandedVideo(null)} />
+        )}
+      </AnimatePresence>
     </>
   );
 }
