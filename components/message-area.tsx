@@ -397,7 +397,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
 }
 
 // ─── Video recorder hook ────────────────────────────────────────────────────
-function useVideoRecorder() {
+function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [recording, setRecording] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
@@ -406,6 +406,7 @@ function useVideoRecorder() {
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onBlobReadyRef = useRef<((blob: Blob) => void) | null>(null);
 
   const MAX_DURATION = 60; // 60 seconds limit like Telegram
 
@@ -420,18 +421,25 @@ function useVideoRecorder() {
         video: { 
           width: { ideal: 640 }, 
           height: { ideal: 640 }, 
-          aspectRatio: { exact: 1 }, // Try to get square
+          aspectRatio: { exact: 1 },
           facingMode: "user" 
         } 
       });
       setVideoStream(stream);
       
-      const options = { mimeType: 'video/webm;codecs=vp8,opus' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options.mimeType = 'video/webm';
-      }
+      // Extensive MIME type check for better compatibility (especially iOS Safari)
+      const types = [
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/mp4',
+        'video/quicktime'
+      ];
+      const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+      
+      console.log("Selected Video MIME:", selectedType || "browser default");
 
-      const recorder = new MediaRecorder(stream, options);
+      const recorder = new MediaRecorder(stream, selectedType ? { mimeType: selectedType } : {});
       mediaRef.current = recorder;
       chunksRef.current = [];
 
@@ -440,8 +448,12 @@ function useVideoRecorder() {
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "video/webm" });
+        const blob = new Blob(chunksRef.current, { type: selectedType || "video/webm" });
         setVideoBlob(blob);
+        if (onBlobReadyRef.current) {
+          onBlobReadyRef.current(blob);
+          onBlobReadyRef.current = null;
+        }
         stream.getTracks().forEach((t) => t.stop());
         setVideoStream(null);
         if (timerRef.current) clearInterval(timerRef.current);
@@ -472,7 +484,8 @@ function useVideoRecorder() {
     }
   }, []);
 
-  const stop = useCallback(() => {
+  const stop = useCallback((onReady?: (blob: Blob) => void) => {
+    if (onReady) onBlobReadyRef.current = onReady;
     mediaRef.current?.stop();
     setRecording(false);
     if (timerRef.current) clearInterval(timerRef.current);
@@ -483,6 +496,7 @@ function useVideoRecorder() {
     setVideoStream(null);
     setRecordingTime(0);
     setProgress(0);
+    onBlobReadyRef.current = null;
   }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
@@ -687,13 +701,15 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
         if (opts.audioDuration) fd.append("audioDuration", opts.audioDuration.toString());
       }
       if (opts.image) fd.append("image", opts.image);
-      if (opts.video) fd.append("video", new File([opts.video], "video.webm", { type: "video/webm" }));
+      if (opts.video) {
+        const videoExt = opts.video.type.includes('mp4') ? 'mp4' : 'webm';
+        fd.append("video", new File([opts.video], `video.${videoExt}`, { type: opts.video.type }));
+      }
 
       const res = await fetch(`/api/chat/${chat.id}/messages`, { method: "POST", body: fd });
       if (res.ok) {
         const newMessage = await res.json();
         setMessages((prev: any[]) => {
-          // Prevent duplicates if Pusher also triggers
           if (prev.find(m => m.id === newMessage.id)) return prev;
           return [...prev, newMessage];
         });
@@ -701,7 +717,13 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
         setImagePreview(null);
         voice.clear();
         video.clear();
+      } else {
+        const errData = await res.json();
+        alert(locale === "uz" ? `Xabarni yuborib bo'lmadi: ${errData.error}` : `Failed to send message: ${errData.error}`);
       }
+    } catch (err: any) {
+      console.error("SendMessage Error:", err);
+      alert(locale === "uz" ? "Internet bilan bog'lanishda xatolik" : "Connection error");
     } finally {
       setIsSending(false);
     }
@@ -1050,12 +1072,15 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
               <div className="flex flex-col items-center gap-1">
                 <Button 
                   size="icon" 
-                  onClick={video.stop} 
+                  onClick={() => video.stop((blob) => sendMessage({ video: blob }))} 
                   className="h-20 w-20 rounded-full bg-primary hover:bg-primary/90 shadow-[0_0_20px_rgba(59,130,246,0.4)] border-4 border-white/10 group transition-all"
+                  disabled={isSending}
                 >
-                  <Send className="h-8 w-8 text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  {isSending ? <Loader2 className="h-8 w-8 animate-spin text-white" /> : <Send className="h-8 w-8 text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                 </Button>
-                <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">{locale === 'uz' ? 'Yuborish' : 'Send'}</span>
+                <span className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
+                  {isSending ? (locale === 'uz' ? 'Yuborilmoqda...' : 'Sending...') : (locale === 'uz' ? 'Yuborish' : 'Send')}
+                </span>
               </div>
 
               <Button 
