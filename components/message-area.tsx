@@ -1115,7 +1115,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
               <Button 
                 variant="outline" 
                 size="icon" 
-                onClick={video.stop}
+                onClick={() => video.stop()}
                 className="h-14 w-14 rounded-full border-2 border-white/20 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md shadow-xl transition-all active:scale-95"
               >
                 <X className="h-6 w-6" />
