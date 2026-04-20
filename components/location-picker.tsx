@@ -100,8 +100,11 @@ export default function LocationPicker({ onSelect, initialLat, initialLng }: Loc
     const L = (window as any).L;
     const newPos: [number, number] = [initialLat, initialLng];
     
-    // Update map view
-    mapRef.current.setView(newPos, mapRef.current.getZoom());
+    // Update map view with smooth animation
+    mapRef.current.flyTo(newPos, 15, {
+      duration: 1.5,
+      easeLinearity: 0.25
+    });
     
     // Create/Update marker
     const makeIcon = (L: any) => L.divIcon({

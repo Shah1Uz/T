@@ -76,7 +76,32 @@ export default function CreateListingPage() {
   };
 
   const updateMapPosition = (name: string) => {
-    const coords = LOCATION_COORDINATES[name];
+    const normalize = (s: string) => s.toLowerCase().replace(/ʻ|'|`/g, "'").trim();
+    const searchName = normalize(name);
+    
+    // 1. Try exact match (normalized)
+    let coords = Object.entries(LOCATION_COORDINATES).find(
+      ([key]) => normalize(key) === searchName
+    )?.[1];
+
+    // 2. Try partial match if name contains a comma (District, Region)
+    if (!coords && name.includes(",")) {
+      const parts = name.split(",").map(p => normalize(p));
+      for (const part of parts) {
+        coords = Object.entries(LOCATION_COORDINATES).find(
+          ([key]) => normalize(key) === part
+        )?.[1];
+        if (coords) break;
+      }
+    }
+
+    // 3. Try searching keys that are contained within the searchName
+    if (!coords) {
+       coords = Object.entries(LOCATION_COORDINATES).find(
+         ([key]) => searchName.includes(normalize(key))
+       )?.[1];
+    }
+
     if (coords) {
       setValue("latitude", coords.lat);
       setValue("longitude", coords.lng);

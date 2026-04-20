@@ -26,7 +26,7 @@ export async function GET() {
         const avgRating = user.reviewsReceived.length > 0
           ? user.reviewsReceived.reduce((acc, r) => acc + r.rating, 0) / user.reviewsReceived.length
           : 0;
-        
+
         return {
           id: user.id,
           name: user.name,

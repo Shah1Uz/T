@@ -30,6 +30,8 @@ function useVoiceRecorder() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const [waveform, setWaveform] = useState<number[]>([]);
+  const waveformRef = useRef<number[]>([]);
 
   const start = useCallback(async () => {
     try {
@@ -66,7 +68,15 @@ function useVoiceRecorder() {
           analyserRef.current.getByteFrequencyData(dataArray);
           const sum = dataArray.reduce((acc, v) => acc + v, 0);
           const avg = (sum / bufferLength) * 2;
-          setVolume(Math.min(100, avg));
+          const currentVol = Math.min(100, avg);
+          setVolume(currentVol);
+          
+          // Capture waveform data (~20 times per second)
+          waveformRef.current.push(currentVol);
+          if (waveformRef.current.length % 3 === 0) {
+            setWaveform([...waveformRef.current.slice(-40)]); // Keep last 40 bars for display
+          }
+
           requestAnimationFrame(updateVolume);
         };
         updateVolume();
@@ -118,11 +128,60 @@ function useVoiceRecorder() {
     setAudioBlob(null);
     setRecordingTime(0);
     setVolume(0);
+    setWaveform([]);
+    waveformRef.current = [];
   }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  return { recording, audioBlob, recordingTime, formatTime, volume, start, stop, clear };
+  return { recording, audioBlob, recordingTime, formatTime, volume, waveform, start, stop, clear };
+}
+
+// ─── Real Waveform Decoder ───────────────────────────────────────────────────
+function useWaveformDecoder(url: string) {
+  const [peaks, setPeaks] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!url) return;
+    
+    const decode = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        
+        const rawData = audioBuffer.getChannelData(0); // Left channel
+        const samples = 40; // Number of bars
+        const blockSize = Math.floor(rawData.length / samples);
+        const filteredData = [];
+        for (let i = 0; i < samples; i++) {
+          let blockStart = blockSize * i;
+          let sum = 0;
+          for (let j = 0; j < blockSize; j++) {
+            sum = sum + Math.abs(rawData[blockStart + j]);
+          }
+          filteredData.push(sum / blockSize);
+        }
+        
+        // Normalize
+        const multiplier = Math.pow(Math.max(...filteredData), -1);
+        setPeaks(filteredData.map(n => n * multiplier));
+      } catch (e) {
+        console.error("Waveform decoding failed:", e);
+        // Fallback to random peaks
+        setPeaks([...Array(40)].map(() => Math.random() * 0.8 + 0.2));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    decode();
+  }, [url]);
+
+  return { peaks, isLoading };
 }
 
 // ─── Audio player (Animated & Polished) ──────────────────────────────────────
@@ -131,6 +190,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(initialDuration || 0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { peaks, isLoading } = useWaveformDecoder(url);
 
   const toggle = () => {
     if (!audioRef.current) return;
@@ -139,22 +199,31 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
     } else {
       audioRef.current.play().catch(console.error);
     }
-    setPlaying(!playing);
   };
 
   const isMuted = variant === "muted";
 
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !isFinite(duration) || duration === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = x / rect.width;
+    const newTime = pct * duration;
+    audioRef.current.currentTime = newTime;
+    setProgress(pct * 100);
+  };
+
   return (
     <div className={cn(
-      "flex flex-col gap-2 min-w-[220px] p-3 rounded-2xl backdrop-blur-md border shadow-xl",
+      "flex flex-col gap-2 min-w-[240px] p-3 rounded-[24px] backdrop-blur-md border shadow-xl transition-all",
       isMuted 
-        ? "bg-muted/50 border-border/50" 
+        ? "bg-muted/60 border-border/50" 
         : "bg-white/10 border-white/5"
     )}>
       <audio 
         ref={audioRef} 
-        onPlay={() => { console.log("Audio Play Event"); setPlaying(true); }}
-        onPause={() => { console.log("Audio Pause Event"); setPlaying(false); }}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         onTimeUpdate={(e) => {
           const ct = e.currentTarget.currentTime;
           const du = e.currentTarget.duration;
@@ -164,18 +233,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
         }}
         onLoadedMetadata={(e) => {
           const du = e.currentTarget.duration;
-          if (isFinite(du)) {
-            console.log("Audio Metadata Loaded. Duration:", du);
-            setDuration(du);
-          }
-        }}
-        onError={(e) => {
-          const error = (e.target as any).error;
-          console.error("AUDIO_ERROR:", {
-            code: error?.code,
-            message: error?.message,
-            url: url
-          });
+          if (isFinite(du)) setDuration(du);
         }}
         onEnded={() => { setPlaying(false); setProgress(0); }}
         className="hidden"
@@ -190,51 +248,55 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
         <button 
           onClick={toggle} 
           className={cn(
-            "h-11 w-11 flex items-center justify-center rounded-full transition-all shrink-0 shadow-lg group",
+            "h-11 w-11 flex items-center justify-center rounded-full transition-all shrink-0 shadow-lg active:scale-90",
             isMuted ? "bg-primary text-white" : "bg-white text-primary"
           )}
         >
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current ml-0.5" />}
         </button>
         
-        <div className="flex-1 flex items-center gap-1 h-7">
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
-              className={cn(
-                "w-1 rounded-full",
-                isMuted ? "bg-primary/30" : "bg-white/40"
-              )}
-              initial={{ height: "15%" }}
-              animate={{ 
-                height: playing ? ["15%", "90%", "30%", "100%", "15%"] : "15%",
-                backgroundColor: playing 
-                  ? (isMuted ? "rgb(59, 130, 246)" : "rgb(255, 255, 255)") 
-                  : (isMuted ? "rgb(59, 130, 246, 0.3)" : "rgb(255, 255, 255, 0.4)")
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 0.7 + (i % 3) * 0.2,
-                delay: i * 0.04 
-              }}
-            />
-          ))}
+        <div 
+          className="flex-1 flex items-center gap-0.5 h-8 cursor-pointer relative"
+          onClick={handleSeek}
+        >
+          {peaks.length > 0 ? (
+            peaks.map((peak, i) => {
+              const played = (i / peaks.length) * 100 < progress;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "w-1 rounded-full transition-all duration-300",
+                    isMuted 
+                      ? (played ? "bg-primary" : "bg-primary/20") 
+                      : (played ? "bg-white" : "bg-white/30")
+                  )}
+                  style={{ height: `${Math.max(15, peak * 90)}%` }}
+                />
+              );
+            })
+          ) : (
+             <div className="flex-1 flex items-end gap-0.5 h-full opacity-30">
+               {[...Array(30)].map((_, i) => (
+                 <div key={i} className={cn("w-1 rounded-full", isMuted ? "bg-primary" : "bg-white")} style={{ height: `${15 + (i % 3) * 10}%` }} />
+               ))}
+             </div>
+          )}
         </div>
       </div>
       
       <div className="flex items-center justify-between gap-2 px-1">
-        <div className={cn("flex-1 h-1 rounded-full overflow-hidden relative", isMuted ? "bg-primary/10" : "bg-white/20")}>
-          <motion.div 
-            className={cn("absolute left-0 top-0 h-full rounded-full", isMuted ? "bg-primary" : "bg-white shadow-[0_0_8px_white]")}
-            animate={{ width: `${isFinite(progress) ? progress : 0}%` }}
-            transition={{ ease: "linear", duration: 0.1 }}
-          />
-        </div>
-        <span className={cn("text-[9px] font-mono min-w-[30px]", isMuted ? "text-muted-foreground" : "text-white/70")}>
-          {isFinite(duration) && duration > 0 
-            ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` 
-            : "0:00"}
+        <span className={cn("text-[10px] font-bold", isMuted ? "text-muted-foreground" : "text-white/80")}>
+           {progress > 0 && playing 
+             ? `${Math.floor((progress/100 * duration) / 60)}:${Math.floor((progress/100 * duration) % 60).toString().padStart(2, '0')}`
+             : (isFinite(duration) && duration > 0 
+                ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` 
+                : "0:00")}
         </span>
+        <div className="flex gap-0.5">
+           {isMuted && <div className="h-1 w-1 rounded-full bg-primary/40" />}
+           {!isMuted && <div className="h-1 w-1 rounded-full bg-white/40" />}
+        </div>
       </div>
     </div>
   );
@@ -839,20 +901,27 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
           </div>
           
           <div className="flex-1 flex flex-col gap-1">
-            <span className="text-red-600 dark:text-red-400 text-sm font-bold">
+            <span className="text-red-600 dark:text-red-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
               {locale === "uz" ? "Yozilmoqda" : "Запись"} {voice.formatTime(voice.recordingTime)}
             </span>
-            <div className="flex items-center gap-0.5 h-3">
-              {[...Array(20)].map((_, i) => (
+            <div className="flex items-end gap-0.5 h-10 px-1">
+              {voice.waveform.map((vol, i) => (
                 <motion.div 
                   key={i}
-                  className="w-1 bg-red-400 rounded-full"
+                  className="w-1 bg-red-500 rounded-full shrink-0"
+                  initial={{ height: "4px" }}
                   animate={{ 
-                    height: Math.max(2, (voice.volume * (1 - Math.abs(i - 10) / 10)) / 2) + "%" 
+                    height: `${Math.max(10, vol)}%`
                   }}
                   transition={{ duration: 0.1 }}
                 />
               ))}
+              {voice.waveform.length === 0 && (
+                <div className="flex items-end gap-0.5 h-full opacity-20">
+                   {[...Array(30)].map((_, i) => <div key={i} className="w-1 h-1 bg-red-500 rounded-full" />)}
+                </div>
+              )}
             </div>
           </div>
 
