@@ -182,6 +182,9 @@ export const translations: Record<string, any> = {
       no_listings_desc: "Sizga yoqqan e'lonlarni saqlab qo'yishingiz mumkin. Hali hech narsani saqlamadingiz.",
       not_logged_in: "Tizimga kirmagansiz",
       not_logged_in_desc: "Saralangan e'lonlarni ko'rish uchun profilingizga kiring yoki ro'yxatdan o'ting.",
+      price_drop_title: "Narx tushdi! 📉",
+      price_increase_title: "Narx ko'tarildi! 📈",
+      price_change_msg: "Sizga yoqqan \"{title}\" e'lonining narxi o'zgardi. Yangi narx: {price} USD",
     },
     profile: {
       total_listings: "E'lonlar",
@@ -461,6 +464,9 @@ export const translations: Record<string, any> = {
       no_listings_desc: "Вы можете сохранять понравившиеся объявления здесь. Пока ничего не добавлено.",
       not_logged_in: "Вы не вошли в систему",
       not_logged_in_desc: "Чтобы просматривать избранное, войдите в свой профиль или зарегистрируйтесь.",
+      price_drop_title: "Цена снижена! 📉",
+      price_increase_title: "Цена повышена! 📈",
+      price_change_msg: "Цена на понравившееся вам объявление \"{title}\" изменилась. Новая цена: {price} USD",
     },
     profile: {
       total_listings: "Объявления",

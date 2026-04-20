@@ -56,8 +56,10 @@ export async function PATCH(
       },
     });
 
-    // Check for price drop
-    if (data.price < oldListing.price) {
+    // Check for price change
+    if (data.price !== oldListing.price) {
+      const isPriceDrop = data.price < oldListing.price;
+      
       // Find users who favorited this
       const followers = await prisma.favorite.findMany({
         where: { listingId: id },
@@ -66,12 +68,12 @@ export async function PATCH(
 
       // Create notifications for each follower
       if (followers.length > 0) {
-        await (prisma as any).notification.createMany({
+        await prisma.notification.createMany({
           data: followers.map(f => ({
             userId: f.userId,
-            type: "price_drop",
-            title: "Narx tushdi! 📉",
-            message: `"${oldListing.title}" e'lonining narxi ${(oldListing.price).toLocaleString()} USD dan ${(data.price).toLocaleString()} USD ga tushdi.`,
+            type: "price_change",
+            title: isPriceDrop ? "Narx tushdi! 📉" : "Narx ko'tarildi! 📈",
+            message: `"${oldListing.title}" e'lonining narxi ${(oldListing.price).toLocaleString()} USD dan ${(data.price).toLocaleString()} USD ga o'zgardi.`,
             listingId: id,
           }))
         });

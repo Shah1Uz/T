@@ -226,6 +226,14 @@ export default function Navbar() {
                         <span className="font-bold">{t("dashboard.title")}</span>
                       </Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link href="/favorites" className="flex items-center gap-3 p-3 rounded-xl cursor-pointer w-full text-foreground hover:bg-primary/5 hover:text-primary transition-all">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-red-500/10 group-hover:text-red-500">
+                          <Heart className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold">{t("favorites.title")}</span>
+                      </Link>
+                    </DropdownMenuItem>
                     {isAdmin && (
                       <DropdownMenuItem>
                         <Link href="/admin" className="flex items-center gap-3 p-3 rounded-xl cursor-pointer text-primary w-full hover:bg-primary/10 transition-all border border-primary/20 bg-primary/5 mt-1">
@@ -298,6 +306,29 @@ export default function Navbar() {
                       {locale === "uz" ? "UZ" : "RU"}
                     </button>
                   </div>
+                </div>
+
+                 <div className="grid grid-cols-2 gap-3">
+                   <Link 
+                    href="/favorites" 
+                    className="flex flex-col gap-2 p-4 rounded-2xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 transition-all group"
+                    onClick={() => setMobileMenuOpen(false)}
+                   >
+                     <div className="h-10 w-10 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                       <Heart className="h-5 w-5 fill-red-500/20" />
+                     </div>
+                     <span className="font-bold text-sm">{t("favorites.title")}</span>
+                   </Link>
+                   <Link 
+                    href="/dashboard" 
+                    className="flex flex-col gap-2 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 transition-all group"
+                    onClick={() => setMobileMenuOpen(false)}
+                   >
+                     <div className="h-10 w-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                       <LayoutDashboard className="h-5 w-5" />
+                     </div>
+                     <span className="font-bold text-sm">{t("dashboard.title")}</span>
+                   </Link>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
