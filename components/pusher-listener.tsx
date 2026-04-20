@@ -17,7 +17,7 @@ export default function PusherListener() {
   useEffect(() => {
     if (!user || !PusherClient) return;
 
-    const channel = PusherClient.subscribe(`user-${user.id}`);
+    const channel = PusherClient.subscribe(`private-user-${user.id}`);
 
     channel.bind("chat-update", (data: any) => {
       console.log("Global Chat Update Received:", data);
@@ -48,7 +48,7 @@ export default function PusherListener() {
     });
 
     return () => {
-      PusherClient.unsubscribe(`user-${user.id}`);
+      PusherClient.unsubscribe(`private-user-${user.id}`);
     };
   }, [user, currentChatId, pathname, router]);
 

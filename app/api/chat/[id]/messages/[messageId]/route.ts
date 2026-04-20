@@ -35,7 +35,7 @@ export async function DELETE(
     try {
       if (process.env.PUSHER_APP_ID && process.env.NEXT_PUBLIC_PUSHER_KEY) {
         // Update the current chat window
-        await pusherServer.trigger(`chat-${id}`, "delete-message", { messageId });
+        await pusherServer.trigger(`presence-chat-${id}`, "delete-message", { messageId });
         
         // Notify participants to update their sidebars
         const participants = await prisma.chatParticipant.findMany({
@@ -44,7 +44,7 @@ export async function DELETE(
         });
 
         for (const p of participants) {
-          await pusherServer.trigger(`user-${p.userId}`, "chat-update", {
+          await pusherServer.trigger(`private-user-${p.userId}`, "chat-update", {
             chatId: id,
             messageId,
             type: "delete-message"

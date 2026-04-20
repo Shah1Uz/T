@@ -33,7 +33,7 @@ export async function POST(
         where: { id: existingReaction.id },
       });
       
-      await pusherServer.trigger(`chat-${chatId}`, "message-reaction", {
+      await pusherServer.trigger(`presence-chat-${chatId}`, "message-reaction", {
         messageId,
         userId,
         emoji,
@@ -57,7 +57,7 @@ export async function POST(
         },
       });
 
-      await pusherServer.trigger(`chat-${chatId}`, "message-reaction", {
+      await pusherServer.trigger(`presence-chat-${chatId}`, "message-reaction", {
         messageId,
         reaction: newReaction,
         action: "added",

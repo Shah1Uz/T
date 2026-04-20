@@ -16,7 +16,7 @@ export async function POST(
     // Notify the user's own sidebar to clear the unread count
     if (process.env.PUSHER_APP_ID && process.env.NEXT_PUBLIC_PUSHER_KEY) {
       const { pusherServer } = await import("@/lib/pusher-server");
-      await pusherServer.trigger(`user-${userId}`, "chat-update", {
+      await pusherServer.trigger(`private-user-${userId}`, "chat-update", {
         chatId: id,
         type: "messages-seen"
       });

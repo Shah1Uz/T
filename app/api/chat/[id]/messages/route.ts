@@ -75,7 +75,7 @@ export async function POST(
         
         // Update the sidebar/notifications for all participants
         for (const p of participants) {
-          await pusherServer.trigger(`presence-user-${p.userId}`, "chat-update", {
+          await pusherServer.trigger(`private-user-${p.userId}`, "chat-update", {
             chatId: id,
             message,
             type: "new-message"
