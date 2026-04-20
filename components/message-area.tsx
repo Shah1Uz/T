@@ -400,6 +400,7 @@ function AudioPlayer({ url, duration: initialDuration, variant = "primary" }: { 
 function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [recording, setRecording] = useState(false);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [progress, setProgress] = useState(0); // 0 to 100
@@ -427,7 +428,6 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       });
       setVideoStream(stream);
       
-      // Extensive MIME type check for better compatibility (especially iOS Safari)
       const types = [
         'video/webm;codecs=vp8,opus',
         'video/webm',
@@ -437,8 +437,6 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       ];
       const selectedType = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
       
-      console.log("Selected Video MIME:", selectedType || "browser default");
-
       const recorder = new MediaRecorder(stream, selectedType ? { mimeType: selectedType } : {});
       mediaRef.current = recorder;
       chunksRef.current = [];
@@ -450,6 +448,8 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       recorder.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: selectedType || "video/webm" });
         setVideoBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
         if (onBlobReadyRef.current) {
           onBlobReadyRef.current(blob);
           onBlobReadyRef.current = null;
@@ -492,16 +492,18 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   }, []);
 
   const clear = useCallback(() => {
+    if (videoUrl) URL.revokeObjectURL(videoUrl);
     setVideoBlob(null);
+    setVideoUrl(null);
     setVideoStream(null);
     setRecordingTime(0);
     setProgress(0);
     onBlobReadyRef.current = null;
-  }, []);
+  }, [videoUrl]);
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  return { recording, videoBlob, videoStream, recordingTime, progress, formatTime, start, stop, clear };
+  return { recording, videoBlob, videoUrl, videoStream, recordingTime, progress, formatTime, start, stop, clear };
 }
 
 // ─── Circular Video Player ───────────────────────────────────────────────────
@@ -1152,7 +1154,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       {video.videoBlob && !video.recording && (
         <div className="px-4 py-3 border-t bg-muted/40 flex flex-col items-center gap-3">
           <div className="pointer-events-none">
-            <CircularVideoPlayer url={URL.createObjectURL(video.videoBlob)} onExpand={() => setExpandedVideo(URL.createObjectURL(video.videoBlob!))} />
+            <CircularVideoPlayer url={video.videoUrl || ""} onExpand={() => video.videoUrl && setExpandedVideo(video.videoUrl)} />
           </div>
           <div className="flex gap-2 w-full justify-center">
             <Button variant="ghost" onClick={video.clear} className="rounded-xl h-10 px-6 text-muted-foreground">
