@@ -47,11 +47,9 @@ function useVoiceRecorder() {
       
       let updateVolumeFn: () => void;
 
-      // Setup Analyser for Visualizer (Isolated)
+      // Setup Advanced Audio Processing Pipeline
       try {
-        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 48000
-        });
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 48000 });
         audioCtxRef.current = audioCtx;
         
         if (audioCtx.state === "suspended") {
@@ -62,9 +60,37 @@ function useVoiceRecorder() {
         const analyser = audioCtx.createAnalyser();
         analyser.fftSize = 256;
         analyser.smoothingTimeConstant = 0.5;
-        source.connect(analyser);
         analyserRef.current = analyser;
 
+        // 1. High-pass filter (Removes low hum/rumble below 100Hz)
+        const hpFilter = audioCtx.createBiquadFilter();
+        hpFilter.type = "highpass";
+        hpFilter.frequency.value = 100;
+
+        // 2. Low-pass filter (Removes high hiss above 8kHz)
+        const lpFilter = audioCtx.createBiquadFilter();
+        lpFilter.type = "lowpass";
+        lpFilter.frequency.value = 8000;
+
+        // 3. Dynamics Compressor (Levels the voice)
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.setValueAtTime(-24, audioCtx.currentTime);
+        compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+        compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+        compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+        compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+        // 4. Output Destination for Recording
+        const destination = audioCtx.createMediaStreamDestination();
+
+        // Chain: Source -> HPF -> LPF -> Compressor -> Analyser & Destination
+        source.connect(hpFilter);
+        hpFilter.connect(lpFilter);
+        lpFilter.connect(compressor);
+        compressor.connect(analyser);
+        compressor.connect(destination);
+
+        const dataStream = destination.stream;
         const bufferLength = analyser.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
 
@@ -80,47 +106,49 @@ function useVoiceRecorder() {
           if (waveformRef.current.length % 3 === 0) {
             setWaveform([...waveformRef.current.slice(-30)]);
           }
-
           requestAnimationFrame(updateVolumeFn);
         };
-      } catch (visErr) {
-        console.error("Visualizer Error:", visErr);
-      }
 
-      // MediaRecorder setup (Higher Quality)
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
-          ? "audio/ogg;codecs=opus"
-          : "";
-      
-      console.log("Starting high-quality recorder with mime:", mimeType || "default");
-      const recorder = new MediaRecorder(stream, {
-        mimeType: mimeType || undefined,
-        audioBitsPerSecond: 128000 // 128kbps for better quality
-      });
-      mediaRef.current = recorder;
-      chunksRef.current = [];
+        // Use the cleaned stream for MediaRecorder
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+            ? "audio/ogg;codecs=opus"
+            : "";
+        
+        const recorder = new MediaRecorder(dataStream, {
+          mimeType: mimeType || undefined,
+          audioBitsPerSecond: 128000 
+        });
+        
+        mediaRef.current = recorder;
+        chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => { 
-        if (e.data.size > 0) chunksRef.current.push(e.data); 
-      };
-      
-      recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        setAudioBlob(blob);
-        stream.getTracks().forEach((t) => t.stop());
-        if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') audioCtxRef.current.close().catch(() => {});
-      };
+        recorder.ondataavailable = (e) => { 
+          if (e.data.size > 0) chunksRef.current.push(e.data); 
+        };
+        
+        recorder.onstop = () => {
+          const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+          setAudioBlob(blob);
+          stream.getTracks().forEach((t) => t.stop());
+          if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') audioCtxRef.current.close().catch(() => {});
+        };
 
-      recorder.start(100); 
-      setRecording(true);
-      setRecordingTime(0);
-      timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
-      
-      // Start visualizer loop AFTER recorder is up
-      if (updateVolumeFn!) {
+        recorder.start(100); 
+        setRecording(true);
+        setRecordingTime(0);
+        timerRef.current = setInterval(() => setRecordingTime((t) => t + 1), 1000);
+        
         setTimeout(() => updateVolumeFn!(), 100);
+
+      } catch (audioErr) {
+        console.error("Audio Processing Error:", audioErr);
+        // Fallback to raw stream if processing fails
+        const recorder = new MediaRecorder(stream);
+        mediaRef.current = recorder;
+        recorder.start(100);
+        setRecording(true);
       }
     } catch (e) {
       console.error("Critical Mic error:", e);
