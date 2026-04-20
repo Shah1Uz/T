@@ -8,7 +8,7 @@ import Link from "next/link";
 import {
   Send, Image as ImageIcon, ArrowLeft, Mic, MicOff,
   Square, Play, Pause, X, Check, CheckCheck, Phone, PhoneOff, Video, Smile, Loader2, Trash2, VolumeX, Volume2, Expand,
-  Heart, ThumbsUp, Laugh, Plus, MessageCircle, Home
+  Heart, ThumbsUp, Laugh, Plus, MessageCircle, Home, RefreshCw
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -404,6 +404,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [progress, setProgress] = useState(0); // 0 to 100
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -411,8 +412,9 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
 
   const MAX_DURATION = 60; // 60 seconds limit like Telegram
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (customFacing?: "user" | "environment") => {
     try {
+      const mode = customFacing || facingMode;
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: { 
           echoCancellation: true, 
@@ -423,7 +425,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
           width: { ideal: 640 }, 
           height: { ideal: 640 }, 
           aspectRatio: { exact: 1 },
-          facingMode: "user" 
+          facingMode: mode
         } 
       });
       setVideoStream(stream);
@@ -482,7 +484,29 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
       console.error("Video record error:", e);
       alert("Kamera yoki mikrofon ruxsati berilmadi");
     }
-  }, []);
+  }, [facingMode]);
+
+  const toggleCamera = useCallback(async () => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    
+    if (recording) {
+      // If actively recording, we have to restart the stream
+      // Browser support for swapping tracks mid-recorder is poor across mobile
+      if (mediaRef.current && mediaRef.current.state === "recording") {
+        videoStream?.getTracks().forEach(t => t.stop());
+        // Resume with new mode
+        start(newMode);
+      }
+    } else if (videoStream) {
+      // Just previewing
+      videoStream.getTracks().forEach(t => t.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: newMode, width: 640, height: 640, aspectRatio: 1 } 
+      });
+      setVideoStream(stream);
+    }
+  }, [facingMode, recording, videoStream, start]);
 
   const stop = useCallback((onReady?: (blob: Blob) => void) => {
     if (onReady) onBlobReadyRef.current = onReady;
@@ -503,7 +527,7 @@ function useVideoRecorder(onBlobReady?: (blob: Blob) => void) {
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
-  return { recording, videoBlob, videoUrl, videoStream, recordingTime, progress, formatTime, start, stop, clear };
+  return { recording, videoBlob, videoUrl, videoStream, recordingTime, progress, facingMode, formatTime, start, stop, clear, toggleCamera };
 }
 
 // ─── Circular Video Player ───────────────────────────────────────────────────
@@ -1123,8 +1147,24 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   autoPlay 
                   muted 
                   playsInline 
-                  className="w-full h-full object-cover scale-x-[-1]" // Mirroring for front camera
+                  className={cn(
+                    "w-full h-full object-cover",
+                    video.facingMode === "user" && "scale-x-[-1]"
+                  )}
                 />
+                
+                {/* Camera Switch Indicator */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    video.toggleCamera();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md z-[110] transition-all active:scale-95"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                </Button>
                 
                 {/* Recording Indicator at BOTTOM (Telegram Style) */}
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full text-[13px] font-black text-white shadow-lg border border-white/10 z-20">
@@ -1328,7 +1368,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                     size="icon"
                     className="h-9 w-9 rounded-full shrink-0 text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all active:scale-95 group"
                     variant="ghost"
-                    onClick={voice.start}
+                    onClick={() => voice.start()}
                   >
                     <div className="flex items-center gap-0.5">
                       <div className="w-[2px] h-3 bg-current rounded-full group-hover:animate-pulse" />
@@ -1341,7 +1381,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                     size="icon"
                     className="h-9 w-9 rounded-full shrink-0 text-muted-foreground/60 hover:text-primary hover:bg-primary/5 transition-all active:scale-95"
                     variant="ghost"
-                    onClick={video.start}
+                    onClick={() => video.start()}
                   >
                     <Video className="h-4 w-4" />
                   </Button>
