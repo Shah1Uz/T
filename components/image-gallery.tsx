@@ -58,7 +58,7 @@ export default function ImageGallery({ listing }: ImageGalleryProps) {
     <>
       {/* Main Preview Container - Interactive Carousel */}
       <div 
-        className="group relative rounded-[32px] overflow-hidden bg-muted shadow-2xl border border-border cursor-pointer"
+        className="group relative rounded-[32px] overflow-hidden bg-muted shadow-2xl border border-border cursor-pointer md:max-h-[550px]"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const x = e.clientX - rect.left;
@@ -72,7 +72,7 @@ export default function ImageGallery({ listing }: ImageGalleryProps) {
           }
         }}
       >
-        <div className="relative aspect-[16/9] md:aspect-[21/9] w-full">
+        <div className="relative aspect-[16/9] w-full md:max-h-[550px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
