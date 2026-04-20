@@ -591,14 +591,15 @@ function ExpandedVideoModal({ url, onClose }: { url: string; onClose: () => void
         />
         
         {/* Real-time Progress Ring (Telegram Style) */}
-        <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]">
+        <svg className="absolute inset-0 -rotate-90 w-full h-full pointer-events-none drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
           <circle
             cx="50%"
             cy="50%"
             r="49.5%"
-            className="fill-none stroke-blue-500 stroke-[4px]"
+            pathLength="100"
+            className="fill-none stroke-blue-500 stroke-[3px]"
             style={{
-              strokeDasharray: "100 100",
+              strokeDasharray: "100",
               strokeDashoffset: 100 - progress,
               transition: "stroke-dashoffset 0.1s linear"
             }}
