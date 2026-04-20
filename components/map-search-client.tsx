@@ -24,6 +24,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { pusherClient } from "@/lib/pusher";
+import { toast } from "sonner";
 
 export default function MapSearchClient() {
   const { t, locale } = useLocale();
@@ -79,6 +81,31 @@ export default function MapSearchClient() {
       })
       .catch(err => console.error("Failed to fetch saved searches:", err));
   }, []);
+
+  useEffect(() => {
+    if (!pusherClient) return;
+    const channel = pusherClient.subscribe("global-listings");
+    
+    channel.bind("new-listing", (newListing: any) => {
+      setListings((prev) => [newListing, ...prev]);
+      setFilteredListings((prev) => [newListing, ...prev]);
+      
+      toast.info(locale === "uz" ? "Yangi e'lon qo'shildi!" : "Добавлено новое объявление!", {
+        description: newListing.title,
+        action: {
+          label: locale === "uz" ? "Ko'rish" : "Смотреть",
+          onClick: () => {
+            setViewMode('list');
+            setSelectedListing(newListing);
+          }
+        }
+      });
+    });
+
+    return () => {
+      pusherClient.unsubscribe("global-listings");
+    };
+  }, [locale]);
 
   useEffect(() => {
     if (!mapContainer.current || loading) return;

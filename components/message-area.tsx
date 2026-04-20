@@ -719,6 +719,10 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
   const video = useVideoRecorder();
 
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastTypingSentRef = useRef<number>(0);
 
   useEffect(() => {
     if (video.videoStream && videoPreviewRef.current) {
@@ -797,7 +801,27 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
     </span>;
   };
   useEffect(() => {
-    const ch = PusherClient.subscribe(`chat-${chat.id}`);
+    const channelName = `presence-chat-${chat.id}`;
+    const ch = PusherClient.subscribe(channelName);
+
+    ch.bind("pusher:subscription_succeeded", (members: any) => {
+      // Check if other user is already in the channel
+      if (otherParticipant?.userId) {
+        setIsOtherUserOnline(!!members.get(otherParticipant.userId));
+      }
+    });
+
+    ch.bind("pusher:member_added", (member: any) => {
+      if (member.id === otherParticipant?.userId) {
+        setIsOtherUserOnline(true);
+      }
+    });
+
+    ch.bind("pusher:member_removed", (member: any) => {
+      if (member.id === otherParticipant?.userId) {
+        setIsOtherUserOnline(false);
+      }
+    });
     ch.bind("new-message", (msg: any) => setMessages((prev: any[]) => {
       if (prev.find((m: any) => m.id === msg.id)) return prev;
       
@@ -837,8 +861,16 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       }));
     });
 
+    ch.bind("typing", ({ userId: typingUserId }: { userId: string }) => {
+      if (typingUserId !== currentUserId) {
+        setIsTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+      }
+    });
+
     return () => { 
-      PusherClient.unsubscribe(`chat-${chat.id}`); 
+      PusherClient.unsubscribe(channelName); 
     };
   }, [chat.id, currentUserId]);
 
@@ -963,7 +995,10 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                   {otherName.substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card bg-emerald-500 shadow-sm" />
+              <div className={cn(
+                "absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card shadow-sm transition-colors duration-500",
+                isOtherUserOnline ? "bg-emerald-500" : "bg-slate-400"
+              )} />
             </div>
             <div className="min-w-0 flex flex-col justify-center">
               <div className="font-extrabold text-foreground truncate flex items-center gap-1.5 leading-tight group-hover/header:text-primary transition-colors text-[15px]">
@@ -975,7 +1010,20 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
                 )}
               </div>
               <div className="flex items-center h-4">
-                {getStatus(otherUserStatus || otherUser?.lastActive)}
+                {isTyping ? (
+                  <span className="text-primary text-[10px] font-bold animate-pulse flex items-center gap-1">
+                    {locale === "uz" ? "Xabar yozmoqda..." : "Печатает..."}
+                    <span className="flex gap-0.5">
+                      <span className="w-0.5 h-0.5 bg-current rounded-full animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-0.5 h-0.5 bg-current rounded-full animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-0.5 h-0.5 bg-current rounded-full animate-bounce" />
+                    </span>
+                  </span>
+                ) : isOtherUserOnline ? (
+                  <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 border-none h-4 px-1.5 text-[9px] font-black uppercase tracking-wider">Online</Badge>
+                ) : (
+                  getStatus(otherUserStatus || otherUser?.lastActive)
+                )}
               </div>
             </div>
           </Link>
@@ -1401,7 +1449,13 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
             <Input
               placeholder={t("chat.type_message") || "Send a message..."}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (Date.now() - lastTypingSentRef.current > 3000) {
+                  lastTypingSentRef.current = Date.now();
+                  fetch(`/api/chat/${chat.id}/typing`, { method: "POST" }).catch(() => {});
+                }
+              }}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSendText())}
               className="flex-1 bg-transparent border-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-[15px] h-11 px-2"
             />

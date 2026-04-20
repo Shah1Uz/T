@@ -17,7 +17,6 @@ export const chatService = {
       }
     });
 
-
     if (!chat) {
       chat = await (prisma.chat as any).create({
         data: {
@@ -35,12 +34,10 @@ export const chatService = {
           listing: { include: { images: true } }
         } as any
       });
-
     }
 
     return chat;
   },
-
 
   async getUserChats(userId: string) {
     return prisma.chat.findMany({
@@ -52,10 +49,7 @@ export const chatService = {
         participants: { include: { user: true } },
         messages: { orderBy: { createdAt: "desc" }, take: 1 },
       } as any,
-
-
       orderBy: { updatedAt: "desc" } as any
-
     });
   },
 
@@ -80,10 +74,9 @@ export const chatService = {
     await prisma.chat.update({
       where: { id: chatId },
       data: { updatedAt: new Date() } as any
-
     });
 
-    await pusherServer.trigger(`chat-${chatId}`, "new-message", message);
+    await pusherServer.trigger(`presence-chat-${chatId}`, "new-message", message);
 
     return message;
   },
@@ -99,7 +92,7 @@ export const chatService = {
     });
 
     if (result.count > 0) {
-      await pusherServer.trigger(`chat-${chatId}`, "messages-seen", { userId });
+      await pusherServer.trigger(`presence-chat-${chatId}`, "messages-seen", { userId });
     }
 
     return result;

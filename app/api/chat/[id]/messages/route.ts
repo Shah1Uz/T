@@ -71,11 +71,11 @@ export async function POST(
     try {
       if (process.env.PUSHER_APP_ID && process.env.NEXT_PUBLIC_PUSHER_KEY) {
         // Update the current chat window
-        await pusherServer.trigger(`chat-${id}`, "new-message", message);
+        await pusherServer.trigger(`presence-chat-${id}`, "new-message", message);
         
         // Update the sidebar/notifications for all participants
         for (const p of participants) {
-          await pusherServer.trigger(`user-${p.userId}`, "chat-update", {
+          await pusherServer.trigger(`presence-user-${p.userId}`, "chat-update", {
             chatId: id,
             message,
             type: "new-message"

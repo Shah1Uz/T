@@ -56,7 +56,12 @@ export async function POST(req: Request) {
 
     const listing = await listingService.create({ ...validation.data, userId }, validImages);
     
-    // Clear Next.js cache to show new listing immediately
+    // Real-time broadcast for new listings
+    if (pusherServer) {
+      await pusherServer.trigger("global-listings", "new-listing", listing);
+    }
+
+    // Clear Next.js cache
     revalidatePath("/");
     revalidatePath("/home");
     revalidatePath("/listings");

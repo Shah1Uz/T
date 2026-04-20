@@ -16,6 +16,7 @@ export const pusherClient = (process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.N
       process.env.NEXT_PUBLIC_PUSHER_KEY!,
       {
         cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        authEndpoint: "/api/pusher/auth",
       }
     )
   : null as any;
