@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Bed, Move, MapPin, Phone, MessageSquare, 
-  Calendar, Eye, Heart, Share2, Trash2 
+  Calendar, Eye, Heart, Share2, Trash2, ChevronLeft 
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -148,7 +148,20 @@ export default function ListingDetailsClient({ listing, isOwner }: { listing: an
   };
 
   return (
-    <div className="container py-4 md:py-8">
+    <div className="container py-4 md:py-8 space-y-6">
+      {/* Search/Back Navigation */}
+      <div className="flex items-center gap-4">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => router.back()}
+          className="rounded-xl font-bold bg-secondary/50 hover:bg-secondary transition-all gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {t("common.back") || "Orqaga"}
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
         
         {/* Left Column: Content */}

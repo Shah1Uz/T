@@ -93,11 +93,20 @@ export default function ImageGallery({ listing }: ImageGalleryProps) {
           </AnimatePresence>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent transition-opacity group-hover:opacity-90 pointer-events-none"></div>
           
-          <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10">
-            <Badge className="bg-card/95 backdrop-blur-sm text-foreground hover:bg-white px-2.5 py-1 rounded-lg font-bold shadow-md border-none text-[10px] uppercase tracking-tighter">
+          <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-10">
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                window.history.back();
+              }}
+              className="h-8 w-8 flex items-center justify-center rounded-lg bg-card/90 backdrop-blur-sm text-foreground hover:bg-white shadow-md transition-all active:scale-95"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <Badge className="bg-card/95 backdrop-blur-sm text-foreground hover:bg-white px-2.5 py-1 rounded-lg font-bold shadow-md border-none text-[10px] uppercase tracking-tighter self-center">
               {listing.type === "sale" ? t("listing.sale") || "Sotuv" : t("listing.rent") || "Ijara"}
             </Badge>
-            <Badge className="bg-primary/95 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg font-bold shadow-md border-none text-[10px] uppercase tracking-tighter">
+            <Badge className="bg-primary/95 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg font-bold shadow-md border-none text-[10px] uppercase tracking-tighter self-center">
               {listing.propertyType === "apartment" ? t("listing.apartment") || "Kvartira" : t("listing.house") || "Hovli"}
             </Badge>
           </div>
