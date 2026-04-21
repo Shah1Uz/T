@@ -202,16 +202,7 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
       border: "border-slate-200",
       features: ["vip_ads_3", "listings_unlimited", "priority_max", "verified", "social_media", "video_ads", "support"],
     },
-    {
-      id: "TEST",
-      title: "TEST (O'chiriladi)",
-      price: "2,000",
-      icon: Zap,
-      color: "text-green-600",
-      bg: "bg-green-50",
-      border: "border-green-200",
-      features: ["Test to'lovi", "2000 so'm"],
-    },
+
   ];
 
   return (
