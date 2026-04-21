@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Trophy, LayoutGrid, Star, ArrowRight } from "lucide-react";
 import VerifiedBadge from "@/components/verified-badge";
 import StarRating from "@/components/star-rating";
@@ -53,65 +54,86 @@ export default function TopSellersPage() {
       </div>
 
       <div className="container py-8">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {sellers.map((seller, index) => (
-            <Link key={seller.id} href={`/profile/${seller.id}`}>
-              <Card className="group relative border border-border/40 bg-card/40 backdrop-blur-md hover:bg-card hover:border-primary/30 transition-all duration-300 rounded-[24px] shadow-sm hover:shadow-xl overflow-hidden h-full">
-                
-                {/* Rank Badge - More Subtle */}
-                <div className={`absolute top-3 left-3 h-7 w-7 rounded-lg flex items-center justify-center font-black text-xs z-10 shadow-sm ${
-                  index === 0 ? "bg-amber-400 text-amber-950" : 
-                  index === 1 ? "bg-slate-300 text-slate-800" :
-                  index === 2 ? "bg-orange-400 text-orange-950" :
-                  "bg-muted text-muted-foreground"
-                }`}>
-                  {index + 1}
-                </div>
+        {sellers.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {sellers.map((seller, index) => (
+              <Link key={seller.id} href={`/profile/${seller.id}`}>
+                <Card className="group relative border border-border/40 bg-card/40 backdrop-blur-md hover:bg-card hover:border-primary/30 transition-all duration-300 rounded-[24px] shadow-sm hover:shadow-xl overflow-hidden h-full">
+                  
+                  {/* Rank Badge - More Subtle */}
+                  <div className={`absolute top-3 left-3 h-7 w-7 rounded-lg flex items-center justify-center font-black text-xs z-10 shadow-sm ${
+                    index === 0 ? "bg-amber-400 text-amber-950" : 
+                    index === 1 ? "bg-slate-300 text-slate-800" :
+                    index === 2 ? "bg-orange-400 text-orange-950" :
+                    "bg-muted text-muted-foreground"
+                  }`}>
+                    {index + 1}
+                  </div>
 
-                <CardContent className="p-4 pt-8">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="relative h-16 w-16 rounded-2xl overflow-hidden border-2 border-background shadow-md mb-3 group-hover:scale-105 transition-transform duration-300">
-                      <Image 
-                        src={seller.imageUrl || "/placeholder-user.jpg"} 
-                        fill 
-                        alt={seller.name || "Sotuvchi"} 
-                        className="object-cover"
-                      />
-                    </div>
-                    
-                    <div className="space-y-0.5 mb-3 w-full">
-                      <h2 className="text-sm font-bold text-foreground flex items-center justify-center gap-1 truncate px-1">
-                        {seller.name || "Sotuvchi"}
-                        {seller.isVerified && <VerifiedBadge iconClassName="w-3.5 h-3.5" />}
-                      </h2>
-                      <div className="flex items-center justify-center gap-1">
-                         <StarRating rating={seller.avgRating} size={10} />
-                         <span className="text-[10px] font-bold text-amber-500">({seller.reviewsCount})</span>
+                  <CardContent className="p-4 pt-8">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="relative h-16 w-16 rounded-2xl overflow-hidden border-2 border-background shadow-md mb-3 group-hover:scale-105 transition-transform duration-300">
+                        <Image 
+                          src={seller.imageUrl || "/placeholder-user.jpg"} 
+                          fill 
+                          alt={seller.name || "Sotuvchi"} 
+                          className="object-cover"
+                        />
+                      </div>
+                      
+                      <div className="space-y-0.5 mb-3 w-full">
+                        <h2 className="text-sm font-bold text-foreground flex items-center justify-center gap-1 truncate px-1">
+                          {seller.name || "Sotuvchi"}
+                          {seller.isVerified && <VerifiedBadge iconClassName="w-3.5 h-3.5" />}
+                        </h2>
+                        <div className="flex items-center justify-center gap-1">
+                           <StarRating rating={seller.avgRating} size={10} />
+                           <span className="text-[10px] font-bold text-amber-500">({seller.reviewsCount})</span>
+                        </div>
+                      </div>
+
+                      <div className="w-full grid grid-cols-2 gap-2 pt-3 border-t border-border/50">
+                         <div className="bg-primary/5 rounded-xl p-1.5 border border-primary/10">
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">{locale === "uz" ? "E'lonlar" : "Объявления"}</p>
+                            <div className="flex items-center justify-center gap-1 text-primary">
+                               <LayoutGrid className="h-3 w-3" />
+                               <span className="text-xs font-black">{seller.listingCount}</span>
+                            </div>
+                         </div>
+                         <div className="bg-blue-500/5 rounded-xl p-1.5 border border-blue-500/10">
+                            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">{locale === "uz" ? "Reyting" : "Рейтинг"}</p>
+                            <div className="flex items-center justify-center gap-1 text-blue-500">
+                               <Star className="h-3 w-3 fill-current" />
+                               <span className="text-xs font-black">{seller.avgRating.toFixed(1)}</span>
+                            </div>
+                         </div>
                       </div>
                     </div>
-
-                    <div className="w-full grid grid-cols-2 gap-2 pt-3 border-t border-border/50">
-                       <div className="bg-primary/5 rounded-xl p-1.5 border border-primary/10">
-                          <p className="text-[8px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">{locale === "uz" ? "E'lonlar" : "Объявления"}</p>
-                          <div className="flex items-center justify-center gap-1 text-primary">
-                             <LayoutGrid className="h-3 w-3" />
-                             <span className="text-xs font-black">{seller.listingCount}</span>
-                          </div>
-                       </div>
-                       <div className="bg-blue-500/5 rounded-xl p-1.5 border border-blue-500/10">
-                          <p className="text-[8px] font-black text-muted-foreground uppercase tracking-wider mb-0.5">{locale === "uz" ? "Reyting" : "Рейтинг"}</p>
-                          <div className="flex items-center justify-center gap-1 text-blue-500">
-                             <Star className="h-3 w-3 fill-current" />
-                             <span className="text-xs font-black">{seller.avgRating.toFixed(1)}</span>
-                          </div>
-                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="max-w-md mx-auto py-20 text-center space-y-6">
+            <div className="h-24 w-24 bg-muted rounded-3xl flex items-center justify-center mx-auto opacity-50">
+              <Trophy className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-foreground">
+                {locale === "uz" ? "Sotuvchilar topilmadi" : "Продавцы не найдены"}
+              </h3>
+              <p className="text-muted-foreground font-medium">
+                {locale === "uz" 
+                  ? "Hozircha tizimda faol e'loni bor sotuvchilar mavjud emas." 
+                  : "На данный момент в системе нет продавцов с активными объявлениями."}
+              </p>
+            </div>
+            <Button asChild className="rounded-2xl px-10 h-14 font-black uppercase tracking-tighter shadow-xl shadow-primary/20">
+              <Link href="/">{t("common.home_back")}</Link>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
