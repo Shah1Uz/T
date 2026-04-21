@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       if (transaction.plan === "VIP") planPriority = 3;
       else if (transaction.plan === "STANDART") planPriority = 2;
       else if (transaction.plan === "EKONOM") planPriority = 1;
+      else if (transaction.plan === "TEST") planPriority = 1;
 
       await prisma.user.update({
         where: { id: transaction.userId },

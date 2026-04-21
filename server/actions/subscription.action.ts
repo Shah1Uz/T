@@ -20,6 +20,7 @@ export async function createPaymentAction(plan: string, provider: "CLICK" | "UZU
       EKONOM: 29000,
       STANDART: 59000,
       VIP: 70000,
+      TEST: 2000,
     };
 
     let amount = prices[plan];
@@ -80,6 +81,7 @@ export async function activateFreeTrialAction(plan: string) {
        VIP: 3,
        STANDART: 2,
        EKONOM: 1,
+       TEST: 1,
        FREE: 0
     };
 
