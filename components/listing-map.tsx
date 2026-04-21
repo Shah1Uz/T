@@ -79,7 +79,23 @@ export default function ListingMap({ lat, lng, title }: ListingMapProps) {
       document.body.appendChild(script);
     }
 
+    // Fix for Leaflet initialization in hidden containers/tabs
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 250);
+
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -89,7 +105,7 @@ export default function ListingMap({ lat, lng, title }: ListingMapProps) {
     <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-inner border border-border/10">
       <div
         ref={mapContainer}
-        className="w-full h-full z-0"
+        className="w-full h-full relative z-[10]"
         style={{ minHeight: "300px" }}
       />
       <style jsx global>{`

@@ -283,6 +283,17 @@ export const translations: Record<string, any> = {
       view_history: "To'lovlar tarixini ko'rish",
       payment_report: "To'lov hisoboti",
       success_message: "To'lov muvaffaqiyatli amalga oshirildi!",
+      referral: {
+        title: "Do'stlarni taklif qiling",
+        subtitle: "Har bir do'stingiz uchun 10% chegirma oling (maksimal 50%)!",
+        link_title: "Sizning taklif havolaingiz",
+        copy_link: "Havolani nusxalash",
+        stats_title: "Sizning natijalaringiz",
+        friends_joined: "Qo'shilgan do'stlar",
+        current_discount: "Hozirgi chegirmangiz",
+        max_discount_reached: "Maksimal chegirmaga erishdingiz!",
+        share_msg: "Salom! UySell ilovasida e'lon berish qulay va arzon. Mening havolam orqali o'ting va siz ham chegirmaga ega bo'ling: ",
+      },
     }
   },
   ru: {
@@ -568,6 +579,17 @@ export const translations: Record<string, any> = {
       view_history: "Посмотреть историю платежей",
       payment_report: "Отчет об оплате",
       success_message: "Оплата прошла успешно!",
+      referral: {
+        title: "Приглашайте друзей",
+        subtitle: "Получайте 10% скидки за каждого друга (максимум 50%)!",
+        link_title: "Ваша реферальная ссылка",
+        copy_link: "Копировать ссылку",
+        stats_title: "Ваши результаты",
+        friends_joined: "Приглашенные друзья",
+        current_discount: "Ваша текущая скидка",
+        max_discount_reached: "Вы достигли максимальной скидки!",
+        share_msg: "Привет! Размещать объявления на UySell удобно и выгодно. Переходи по моей ссылке и получи скидку: ",
+      },
     }
   }
 };

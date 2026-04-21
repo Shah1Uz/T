@@ -27,11 +27,24 @@ export default clerkMiddleware(async (auth, req) => {
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set('x-pathname', req.nextUrl.pathname);
 
-  return NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
+
+  // Handle referral code
+  const ref = req.nextUrl.searchParams.get("ref");
+  if (ref) {
+    response.cookies.set("referral_code", ref, {
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+    });
+  }
+
+  return response;
 });
 
 export const config = {

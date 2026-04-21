@@ -40,8 +40,15 @@ model User {
   reports       ListingReport[]
   listingRatings ListingRating[]
 
+  referrerId    String?
+  referrer      User?    @relation("Referrals", fields: [referrerId], references: [id])
+  referrals     User[]   @relation("Referrals")
+  referralCount Int      @default(0)
+  referralCode  String?  @unique
+
   @@index([isBlocked])
   @@index([plan])
+  @@index([referralCode])
 }
 
 model UserReview {

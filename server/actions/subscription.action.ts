@@ -11,14 +11,26 @@ export async function createPaymentAction(plan: string, provider: "CLICK" | "UZU
       return { success: false, error: "Unauthorized" };
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { referralCount: true },
+    });
+
     const prices: { [key: string]: number } = {
       EKONOM: 29000,
       STANDART: 59000,
       VIP: 70000,
     };
 
-    const amount = prices[plan];
+    let amount = prices[plan];
     if (!amount) return { success: false, error: "Invalid plan" };
+
+    // Apply referral discount: 10% per friend, max 50%
+    const referralCount = user?.referralCount || 0;
+    const discountPercent = Math.min(referralCount * 10, 50);
+    if (discountPercent > 0) {
+      amount = Math.round(amount * (1 - discountPercent / 100));
+    }
 
     // Create a pending transaction
     const transaction = await prisma.transaction.create({

@@ -86,7 +86,23 @@ export default function LocationPicker({ onSelect, initialLat, initialLng }: Loc
       document.body.appendChild(script);
     }
 
+    // Fix for Leaflet initialization in hidden containers/mobile
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    }, 250);
+
+    const handleResize = () => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
       mapRef.current?.remove();
       mapRef.current = null;
       markerRef.current = null;
@@ -132,7 +148,7 @@ export default function LocationPicker({ onSelect, initialLat, initialLng }: Loc
 
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainer} className="w-full h-full" style={{ minHeight: "260px" }} />
+      <div ref={mapContainer} className="w-full h-full relative z-[10]" style={{ minHeight: "260px" }} />
 
       {/* Instruction overlay */}
       {!coords && (

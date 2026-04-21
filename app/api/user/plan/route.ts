@@ -9,26 +9,15 @@ export async function GET() {
  
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { plan: true, planExpiresAt: true, trialUsed: true },
+      select: { plan: true, planExpiresAt: true, trialUsed: true, referralCode: true, referralCount: true },
     });
-
-    if (user?.plan && user.plan !== "FREE" && user.planExpiresAt && user.planExpiresAt < new Date()) {
-      // Plan expired! Reset to FREE
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          plan: "FREE",
-          planPriority: 0,
-          planExpiresAt: null,
-        }
-      });
-      return NextResponse.json({ plan: "FREE", trialUsed: user.trialUsed });
-    }
 
     return NextResponse.json({ 
       plan: user?.plan || "FREE",
       planExpiresAt: user?.planExpiresAt || null,
-      trialUsed: user?.trialUsed || false
+      trialUsed: user?.trialUsed || false,
+      referralCode: user?.referralCode || null,
+      referralCount: user?.referralCount || 0
     });
   } catch (error) {
     return NextResponse.json({ plan: "FREE" }, { status: 500 });
