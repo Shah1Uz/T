@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
     const sign_time = formData.get("sign_time")?.toString();
     const sign_string = formData.get("sign_string")?.toString();
 
+    // Logging for debugging
+    console.log("Click Webhook Received:", {
+      click_trans_id,
+      merchant_trans_id,
+      amount,
+      action,
+      sign_time,
+      sign_string
+    });
+
     const SECRET_KEY = process.env.CLICK_SECRET_KEY || "";
 
     // Calculate signature: md5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
@@ -31,16 +41,19 @@ export async function POST(req: NextRequest) {
       )
       .digest("hex");
 
+    console.log("Calculated Signature:", my_sign_string);
+
     if (my_sign_string !== sign_string) {
+      console.error("Signature mismatch!");
       return NextResponse.json({
-        error: "-1",
+        error: -1,
         error_note: "SIGN CHECK FAILED",
       });
     }
 
     if (error && parseInt(error) < 0) {
       return NextResponse.json({
-        error: "-9",
+        error: -9,
         error_note: "TRANSACTION FAILED",
       });
     }
@@ -61,14 +74,14 @@ export async function POST(req: NextRequest) {
 
     if (parseFloat(amount || "0") !== transaction.amount) {
       return NextResponse.json({
-        error: "-2",
+        error: -2,
         error_note: "INCORRECT AMOUNT",
       });
     }
 
     if (transaction.status === "COMPLETED") {
       return NextResponse.json({
-        error: "-4",
+        error: -4,
         error_note: "TRANSACTION ALREADY COMPLETED",
       });
     }
@@ -76,10 +89,10 @@ export async function POST(req: NextRequest) {
     // Action 0: Prepare
     if (action === "0") {
       return NextResponse.json({
-        click_trans_id,
+        click_trans_id: parseInt(click_trans_id || "0"),
         merchant_trans_id,
         merchant_prepare_id: transaction.id.toString(),
-        error: "0",
+        error: 0,
         error_note: "Success",
       });
     }
@@ -116,16 +129,16 @@ export async function POST(req: NextRequest) {
       });
 
       return NextResponse.json({
-        click_trans_id,
+        click_trans_id: parseInt(click_trans_id || "0"),
         merchant_trans_id,
         merchant_confirm_id: transaction.id.toString(),
-        error: "0",
+        error: 0,
         error_note: "Success",
       });
     }
 
     return NextResponse.json({
-      error: "-3",
+      error: -3,
       error_note: "ACTION NOT FOUND",
     });
   } catch (err: any) {
