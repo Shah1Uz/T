@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
 
     // Find the transaction
     const transaction = await prisma.transaction.findUnique({
-      where: { id: orderId },
+      // @ts-ignore
+      where: { id: parseInt(orderId || "0") },
     });
 
     if (!transaction) {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
 
       // Update transaction
       await prisma.transaction.update({
+        // @ts-ignore
         where: { id: transaction.id },
         data: {
           status: "COMPLETED",

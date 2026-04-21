@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
 
     // Find the transaction in our database
     const transaction = await prisma.transaction.findUnique({
-      where: { id: merchant_trans_id },
+      // @ts-ignore - numeric ID after schema update
+      where: { id: parseInt(merchant_trans_id || "0") },
       include: { user: true },
     });
 
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         click_trans_id,
         merchant_trans_id,
-        merchant_prepare_id: transaction.id,
+        merchant_prepare_id: transaction.id.toString(),
         error: "0",
         error_note: "Success",
       });
@@ -87,6 +88,7 @@ export async function POST(req: NextRequest) {
     if (action === "1") {
       // Update transaction status
       await prisma.transaction.update({
+        // @ts-ignore
         where: { id: transaction.id },
         data: {
           status: "COMPLETED",
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         click_trans_id,
         merchant_trans_id,
-        merchant_confirm_id: transaction.id,
+        merchant_confirm_id: transaction.id.toString(),
         error: "0",
         error_note: "Success",
       });

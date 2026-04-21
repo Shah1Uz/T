@@ -46,6 +46,8 @@ model User {
   referralCount Int      @default(0)
   referralCode  String?  @unique
 
+  userNumber    Int               @unique @default(autoincrement())
+  
   @@index([isBlocked])
   @@index([plan])
   @@index([referralCode])
@@ -271,7 +273,7 @@ model Banner {
 }
 
 model Transaction {
-  id             String   @id @default(cuid())
+  id             Int      @id @default(autoincrement())
   userId         String
   amount         Float
   currency       String   @default("UZS")
