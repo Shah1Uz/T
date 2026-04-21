@@ -310,16 +310,16 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
               <div className="bg-white/10 backdrop-blur-sm border border-white/20 p-6 rounded-[32px]">
                 <p className="text-[11px] font-black uppercase tracking-widest text-blue-100 mb-4">{t("pricing.referral.link_title")}</p>
                 <div className="relative group/link">
-                  <div className="w-full h-14 bg-white/10 border border-white/20 rounded-2xl px-5 flex items-center pr-24 overflow-hidden">
+                  <div className="w-full h-14 bg-white/10 border border-white/20 rounded-2xl px-5 flex items-center pr-36 overflow-hidden">
                     <span className="text-sm font-bold text-blue-50 truncate opacity-80">
                       {typeof window !== 'undefined' ? `${window.location.origin}?ref=${referralData.code}` : `.../ref=${referralData.code}`}
                     </span>
                   </div>
                   <Button 
                     onClick={copyReferralLink}
-                    className="absolute right-1 top-1 bottom-1 px-4 rounded-xl bg-white text-blue-800 hover:bg-blue-50 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                    className="absolute right-1 top-2 bottom-2 px-3 rounded-xl bg-white text-blue-800 hover:bg-blue-50 font-black text-[9px] uppercase tracking-widest transition-all active:scale-95"
                   >
-                    <Copy className="h-3 w-3 mr-2" />
+                    <Copy className="h-3 w-3 mr-1.5" />
                     {t("pricing.referral.copy_link")}
                   </Button>
                 </div>
