@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
  
-export async function createPaymentAction(plan: string, provider: "CLICK" | "UZUM") {
+export async function createPaymentAction(plan: string, provider: "CLICK") {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -52,11 +52,8 @@ export async function createPaymentAction(plan: string, provider: "CLICK" | "UZU
       const serviceId = process.env.CLICK_SERVICE_ID || "";
       const merchantId = process.env.CLICK_MERCHANT_ID || "";
       paymentUrl = `https://my.click.uz/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${amount}&merchant_trans_id=${transaction.id}&transaction_param=${transaction.id}&return_url=${encodeURIComponent(baseUrl)}/pricing`;
-    } else if (provider === "UZUM") {
-      const merchantId = process.env.UZUM_MERCHANT_ID || "";
-      // Uzum Pay usually requires an API call to get a session, but for now we'll use a placeholder or common redirect
-      paymentUrl = `https://checkout.uzum.uz/pay?merchantId=${merchantId}&amount=${amount * 100}&orderId=${transaction.id}&returnUrl=${encodeURIComponent(baseUrl)}/pricing`;
     }
+
 
     return { success: true, paymentUrl };
   } catch (error: any) {

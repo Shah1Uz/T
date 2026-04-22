@@ -104,7 +104,7 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
     setIsPaymentModalOpen(true);
   };
 
-  const initiatePayment = async (provider: "CLICK" | "UZUM") => {
+  const initiatePayment = async (provider: "CLICK") => {
     if (!selectedPlan) return;
     setLoading(provider);
     try {
@@ -484,26 +484,8 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
               </div>
             </Button>
 
-            <Button
-              variant="outline"
-              className="h-20 rounded-[32px] border-border hover:border-primary hover:bg-muted group transition-all duration-500 relative overflow-hidden"
-              onClick={() => initiatePayment("UZUM")}
-              disabled={loading !== null}
-            >
-              <div className="flex items-center justify-between w-full px-6 relative z-10">
-                <div className="flex items-center gap-4">
-                   <div className="shrink-0 w-10 h-10 rounded-2xl bg-[#6B00FF] flex items-center justify-center transition-transform group-hover:scale-110 overflow-hidden">
-                    <div className="w-12 h-12 bg-white/10 rotate-45 translate-x-4 -translate-y-4" />
-                  </div>
-                  <div className="text-left">
-                    <span className="block text-xl font-black text-foreground tracking-tight">UZUM <span className="opacity-40">Pay</span></span>
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest group-hover:text-foreground transition-colors">Digital Wallet</span>
-                  </div>
-                </div>
-                <div className="w-2 h-2 rounded-full bg-primary opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300" />
-              </div>
-            </Button>
           </div>
+
 
           <div className="mt-8 pt-8 border-t border-border text-center">
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-4">Secure multi-payment system</p>

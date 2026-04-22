@@ -72,41 +72,87 @@ export default function CreateListingPage() {
     'Yashnobod tumani': { lat: 41.3005, lng: 69.3255 },
     'Sergeli tumani': { lat: 41.2095, lng: 69.2235 },
     'Bektemir tumani': { lat: 41.2335, lng: 69.3455 },
-    'Yangihayot tumani': { lat: 41.1955, lng: 69.2085 }
+    'Yangihayot tumani': { lat: 41.1955, lng: 69.2085 },
+    // Other major cities/districts
+    'Andijon shahri': { lat: 40.7833, lng: 72.3333 },
+    'Namangan shahri': { lat: 41.0000, lng: 71.6667 },
+    'Fargʻona shahri': { lat: 40.3833, lng: 71.7833 },
+    'Qoʻqon shahri': { lat: 40.5286, lng: 70.9425 },
+    'Margʻilon shahri': { lat: 40.4706, lng: 71.7292 },
+    'Samarqand shahri': { lat: 39.6270, lng: 66.9750 },
+    'Buxoro shahri': { lat: 39.7747, lng: 64.4286 },
+    'Nukus shahri': { lat: 42.4533, lng: 59.6103 },
+    'Qarshi shahri': { lat: 38.8611, lng: 65.7833 },
+    'Termiz shahri': { lat: 37.2242, lng: 67.2783 },
+    'Urganch shahri': { lat: 41.5500, lng: 60.6333 },
+    'Xiva shahri': { lat: 41.3783, lng: 60.3639 },
+    'Navoiy shahri': { lat: 40.1039, lng: 65.3739 },
+    'Guliston shahri': { lat: 40.4897, lng: 68.7842 },
+    'Jizzax shahri': { lat: 40.1158, lng: 67.8422 },
+    'Angren shahri': { lat: 41.0167, lng: 70.1433 },
+    'Olmaliq shahri': { lat: 40.8453, lng: 69.5911 },
+    'Chirchiq shahri': { lat: 41.4689, lng: 69.5822 },
   };
 
   const updateMapPosition = (name: string) => {
-    const normalize = (s: string) => s.toLowerCase().replace(/ʻ|'|`/g, "'").trim();
+    if (!name) return;
+    
+    // Normalize string for better matching
+    const normalize = (s: string) => s.toLowerCase()
+      .replace(/ʻ|‘|’|`|'/g, "'") // Standardize apostrophes
+      .replace(/g'/g, "g'")      // Ensure g' is handled
+      .replace(/o'/g, "o'")      // Ensure o' is handled
+      .replace(/\s+/g, " ")      // Collapse whitespace
+      .trim();
+      
     const searchName = normalize(name);
+    console.log("Searching coordinates for:", searchName);
     
     // 1. Try exact match (normalized)
-    let coords = Object.entries(LOCATION_COORDINATES).find(
-      ([key]) => normalize(key) === searchName
-    )?.[1];
+    let matchedKey = Object.keys(LOCATION_COORDINATES).find(
+      key => normalize(key) === searchName
+    );
 
     // 2. Try partial match if name contains a comma (District, Region)
-    if (!coords && name.includes(",")) {
+    if (!matchedKey && name.includes(",")) {
       const parts = name.split(",").map(p => normalize(p));
       for (const part of parts) {
-        coords = Object.entries(LOCATION_COORDINATES).find(
-          ([key]) => normalize(key) === part
-        )?.[1];
-        if (coords) break;
+        matchedKey = Object.keys(LOCATION_COORDINATES).find(
+          key => normalize(key) === part
+        );
+        if (matchedKey) break;
       }
     }
 
-    // 3. Try searching keys that are contained within the searchName
-    if (!coords) {
-       coords = Object.entries(LOCATION_COORDINATES).find(
-         ([key]) => searchName.includes(normalize(key))
-       )?.[1];
+    // 3. Try bidirectional substring matching
+    if (!matchedKey) {
+       matchedKey = Object.keys(LOCATION_COORDINATES).find(key => {
+         const normKey = normalize(key);
+         return searchName.includes(normKey) || normKey.includes(searchName);
+       });
+    }
+    
+    // 4. Word-based matching as a fallback
+    if (!matchedKey) {
+      const searchWords = searchName.split(" ").filter(w => w.length > 3);
+      if (searchWords.length > 0) {
+        matchedKey = Object.keys(LOCATION_COORDINATES).find(key => {
+          const normKey = normalize(key);
+          return searchWords.some(word => normKey.includes(word));
+        });
+      }
     }
 
-    if (coords) {
+    if (matchedKey) {
+      const coords = LOCATION_COORDINATES[matchedKey];
+      console.log("Found coordinates for:", matchedKey, coords);
       setValue("latitude", coords.lat);
       setValue("longitude", coords.lng);
+    } else {
+      console.warn("No coordinates found for:", name);
     }
   };
+
 
   useEffect(() => {
     fetch("/api/locations").then(res => res.json()).then(setLocations);
