@@ -51,15 +51,26 @@ export default function ChatPage() {
     async function fetchMessages() {
       if (!chatId || !user) return;
       try {
-        const res = await fetch(`/api/chat/${chatId}/messages`);
-        if (res.ok) {
-          const data = await res.json();
+        // Fetch messages
+        const msgRes = await fetch(`/api/chat/${chatId}/messages`);
+        if (msgRes.ok) {
+          const data = await msgRes.json();
           setMessages(data);
-          const currentChat = chats.find(c => c.id === chatId);
-          if (currentChat) setActiveChat(currentChat);
+        }
+
+        // Fetch chat details if not already present or needs refresh
+        const currentChat = chats.find(c => c.id === chatId);
+        if (currentChat) {
+          setActiveChat(currentChat);
+        } else {
+          const chatRes = await fetch(`/api/chat/${chatId}`);
+          if (chatRes.ok) {
+            const chatData = await chatRes.json();
+            setActiveChat(chatData);
+          }
         }
       } catch (error) {
-        console.error("Error fetching messages:", error);
+        console.error("Error in fetchMessages/Chat:", error);
       }
     }
     fetchMessages();

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
 import { uploadFile } from "@/lib/upload";
@@ -12,27 +12,48 @@ export async function POST(
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const formData = await req.formData();
-  
-  const text = formData.get("text") as string | null;
-  const audioFile = formData.get("audio") as File | null;
-  const audioDuration = formData.get("audioDuration") ? parseInt(formData.get("audioDuration") as string) : null;
-  const imageFile = formData.get("image") as File | null;
-  const videoFile = formData.get("video") as File | null;
+  const clerkUser = await currentUser();
 
   try {
-    console.log("Processing message send (direct):", { text, hasAudio: !!audioFile, audioDuration, hasImage: !!imageFile, hasVideo: !!videoFile });
+    const chat = await prisma.chat.findUnique({
+      where: { id },
+      include: { participants: true }
+    });
+
+    if (!chat) return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+
+    const isParticipant = chat.participants.some(p => p.userId === userId);
+    
+    if (!isParticipant) {
+      const adminEmail = clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.emailAddresses[0]?.emailAddress;
+      const isAdmin = adminEmail === "shahuztech@gmail.com";
+      
+      if (isAdmin && (chat as any).isSupport) {
+        // Automatically join the admin to the support chat
+        await prisma.chatParticipant.create({
+          data: {
+            chatId: id,
+            userId: userId
+          }
+        });
+      } else {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
+    const formData = await req.formData();
+    
+    const text = formData.get("text") as string | null;
+    const audioFile = formData.get("audio") as File | null;
+    const audioDuration = formData.get("audioDuration") ? parseInt(formData.get("audioDuration") as string) : null;
+    const imageFile = formData.get("image") as File | null;
+    const videoFile = formData.get("video") as File | null;
 
     let audioUrl: string | null = null;
     let imageUrl: string | null = null;
     let videoUrl: string | null = null;
 
-    // Upload audio if provided
-    if (audioFile) {
-      console.log("Uploading audio...");
-      audioUrl = await uploadFile(audioFile);
-      console.log("Audio uploaded:", audioUrl);
-    }
+    console.log("Processing message send (direct):", { text, hasAudio: !!audioFile, audioDuration, hasImage: !!imageFile, hasVideo: !!videoFile });
 
     // Upload image if provided
     if (imageFile) {
