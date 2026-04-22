@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-import { Users, Home, Eye, MessageSquare, Trash2, ShieldCheck, Mail, Calendar, Phone, AlertTriangle, CheckCircle, Ban, Unlock, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, Home, Eye, MessageSquare, Trash2, ShieldCheck, Mail, Calendar, Phone, AlertTriangle, CheckCircle, Ban, Unlock, MoreVertical, ChevronLeft, ChevronRight, Zap } from "lucide-react";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ interface AdminClientProps {
     totalListings: number;
     totalViews: number;
     totalComments: number;
+    totalRevenue: number;
   };
   listingsData: {
     listings: any[];
@@ -64,7 +65,39 @@ export default function AdminClient({ stats, listingsData, usersData, newsData }
   const [isLoadingReports, setIsLoadingReports] = useState(false);
   const [isDeletingListing, setIsDeletingListing] = useState<string | null>(null);
   const [isBlockingUser, setIsBlockingUser] = useState<{id: string, name: string, isBlocked: boolean} | null>(null);
+  const [currentRevenue, setCurrentRevenue] = useState(stats.totalRevenue);
   const router = useRouter();
+
+  // Pusher Real-time Stats
+  useEffect(() => {
+    const setupPusher = async () => {
+      try {
+        const { pusherClient } = await import("@/lib/pusher");
+        if (!pusherClient) return;
+
+        const channel = pusherClient.subscribe("admin-stats");
+        channel.bind("new-payment", (data: { amount: number, user: string, plan: string }) => {
+          setCurrentRevenue(prev => prev + data.amount);
+          toast.success(`Yangi to'lov! ${data.user} ${data.plan} sotib oldi. +${data.amount.toLocaleString()} UZS`, {
+            duration: 10000,
+            position: "top-right"
+          });
+          
+          // Play notification sound
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(() => {});
+        });
+
+        return () => {
+          pusherClient.unsubscribe("admin-stats");
+        };
+      } catch (err) {
+        console.error("Pusher setup error:", err);
+      }
+    };
+
+    setupPusher();
+  }, []);
 
   const fetchReports = async () => {
     setIsLoadingReports(true);
@@ -171,8 +204,9 @@ export default function AdminClient({ stats, listingsData, usersData, newsData }
       </div>
 
       {/* Modern Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {[
+          { label: "Tushum (UZS)", value: currentRevenue, icon: Zap, color: "amber", isCurrency: true },
           { label: "Foydalanuvchilar", value: stats.totalUsers, icon: Users, color: "blue" },
           { label: "E'lonlar", value: stats.totalListings, icon: Home, color: "indigo" },
           { label: "Ko'rishlar", value: stats.totalViews, icon: Eye, color: "emerald" },
@@ -180,10 +214,15 @@ export default function AdminClient({ stats, listingsData, usersData, newsData }
         ].map((s, i) => (
           <div key={i} className="group bg-white dark:bg-slate-900 p-6 rounded-[32px] border border-border/50 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
             <div className={`h-12 w-12 rounded-2xl bg-${s.color}-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-              <s.icon className={`h-6 w-6 text-${s.color}-500`} />
+              <s.icon className={cn(`h-6 w-6 text-${s.color}-500`, s.color === "amber" && "fill-amber-500")} />
             </div>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest leading-none">{s.label}</p>
-            <h3 className="text-3xl font-black text-foreground mt-3 tabular-nums">{s.value.toLocaleString()}</h3>
+            <h3 className={cn(
+              "text-3xl font-black text-foreground mt-3 tabular-nums",
+              s.isCurrency && "text-amber-500"
+            )}>
+              {s.isCurrency ? s.value.toLocaleString() : s.value.toLocaleString()}
+            </h3>
           </div>
         ))}
       </div>

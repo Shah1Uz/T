@@ -30,22 +30,33 @@ export async function POST(req: NextRequest) {
     console.log("Click Webhook Received:", logData);
 
     const SECRET_KEY = process.env.CLICK_SECRET_KEY || "";
+    
+    // Normalize amount for signature calculation: integer if no decimals, otherwise float
+    // Click docs: "If the amount is integer, the fractional part is not passed (for example, 1000)."
+    const normalizedAmount = Number(amount).toString();
 
     // Calculate signature
+    // Prepare: md5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
+    // Complete: md5(click_trans_id + service_id + secret_key + merchant_trans_id + merchant_prepare_id + amount + action + sign_time)
     let hashString = `${click_trans_id}${service_id}${SECRET_KEY}${merchant_trans_id}`;
     if (action === "1") {
       const merchant_prepare_id = formData.get("merchant_prepare_id")?.toString();
       hashString += merchant_prepare_id || "";
     }
-    hashString += `${amount}${action}${sign_time}`;
+    hashString += `${normalizedAmount}${action}${sign_time}`;
 
     const my_sign_string = crypto
       .createHash("md5")
       .update(hashString)
       .digest("hex");
     
+    console.log("--- Click Signature Debug ---");
+    console.log("Raw Amount:", amount);
+    console.log("Normalized Amount:", normalizedAmount);
+    console.log("Hash String:", hashString);
     console.log("Calculated Signature:", my_sign_string);
     console.log("Received Signature:", sign_string);
+    console.log("-----------------------------");
 
     const commonResponse = {
       click_trans_id: parseInt(click_trans_id || "0"),
@@ -53,7 +64,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (my_sign_string !== sign_string) {
-      console.error("Signature mismatch!");
+      console.error("Click Signature Mismatch!");
       return NextResponse.json({
         ...commonResponse,
         error: -1,
@@ -142,6 +153,21 @@ export async function POST(req: NextRequest) {
             isVerified: true,
           },
         });
+
+        // Trigger Pusher event for real-time admin updates
+        try {
+          const { pusherServer } = await import("@/lib/pusher");
+          if (pusherServer) {
+            await pusherServer.trigger("admin-stats", "new-payment", {
+              amount: transaction.amount,
+              plan: transaction.plan,
+              user: transaction.user.name,
+              time: new Date()
+            });
+          }
+        } catch (pErr) {
+          console.error("Pusher Trigger Error:", pErr);
+        }
 
         return NextResponse.json({
           ...commonResponse,

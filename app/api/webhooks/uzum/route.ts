@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const transaction = await prisma.transaction.findUnique({
       // @ts-ignore
       where: { id: parseInt(orderId || "0") },
+      include: { user: true },
     });
 
     if (!transaction) {
@@ -78,6 +79,21 @@ export async function POST(req: NextRequest) {
           isVerified: true,
         },
       });
+
+      // Trigger Pusher event for real-time admin updates
+      try {
+        const { pusherServer } = await import("@/lib/pusher");
+        if (pusherServer) {
+          await pusherServer.trigger("admin-stats", "new-payment", {
+            amount: transaction.amount,
+            plan: transaction.plan,
+            user: transaction.user.name,
+            time: new Date()
+          });
+        }
+      } catch (pErr) {
+        console.error("Pusher Trigger Error:", pErr);
+      }
     }
 
     return NextResponse.json({ status: "OK" });

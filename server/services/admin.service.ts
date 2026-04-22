@@ -2,18 +2,23 @@ import prisma from "@/lib/prisma";
 
 export const adminService = {
   async getDashboardStats() {
-    const [totalUsers, totalListings, totalViews, totalComments] = await Promise.all([
+    const [totalUsers, totalListings, totalViews, totalComments, totalRevenueResult] = await Promise.all([
       prisma.user.count(),
       prisma.listing.count(),
       prisma.view.count(),
       prisma.comment.count(),
+      prisma.transaction.aggregate({
+        where: { status: "COMPLETED" },
+        _sum: { amount: true }
+      })
     ]);
 
     return {
       totalUsers,
       totalListings,
       totalViews,
-      totalComments
+      totalComments,
+      totalRevenue: totalRevenueResult._sum.amount || 0
     };
   },
 
