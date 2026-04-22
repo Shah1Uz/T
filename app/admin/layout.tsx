@@ -12,7 +12,8 @@ import {
   Bell,
   Search,
   BookOpen,
-  PieChart
+  PieChart,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -34,9 +35,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const navItems = [
     { label: "Bosh sahifa", href: "/admin", icon: LayoutDashboard, active: true },
-    { label: "Bannernlar", href: "/admin/banners", icon: MonitorPlay },
-    { label: "Hikoyalar", href: "/admin/stories", icon: BookOpen },
-    { label: "Statistika", href: "/admin/stats", icon: PieChart },
+    { label: "Bannernlar", href: "/admin/banners", icon: MonitorPlay, active: false },
+    { label: "Hikoyalar", href: "/admin/stories", icon: BookOpen, active: false },
+    { label: "Statistika", href: "/admin/stats", icon: PieChart, active: false },
+    { label: "Support", href: "/admin/support", icon: MessageSquare, active: false },
   ];
 
   return (

@@ -27,7 +27,7 @@ model User {
   plan          String            @default("FREE")
   planExpiresAt DateTime?
   planPriority  Int               @default(0)
-  role          String            @default("SELLER") // SELLER or REALTOR
+  role          String            @default("SELLER") // SELLER, REALTOR, or ADMIN
   isBlocked     Boolean           @default(false)
   trialUsed     Boolean           @default(false)
   transactions  Transaction[]
@@ -204,6 +204,7 @@ model Chat {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   listingId    String?
+  isSupport    Boolean           @default(false)
   listing      Listing?          @relation(fields: [listingId], references: [id])
   participants ChatParticipant[]
   messages     Message[]
