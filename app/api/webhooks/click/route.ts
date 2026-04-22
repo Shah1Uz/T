@@ -22,28 +22,17 @@ export async function POST(req: NextRequest) {
     const sign_string = formData.get("sign_string")?.toString();
 
     // Logging for debugging
-    console.log("Click Webhook Received:", {
-      click_trans_id,
-      merchant_trans_id,
-      amount,
-      action,
-      sign_time,
-      sign_string
-    });
+    const logData = Object.fromEntries(formData.entries());
+    console.log("Click Webhook Received:", logData);
 
     const SECRET_KEY = process.env.CLICK_SECRET_KEY || "";
 
-    // Calculate signature: 
-    // Prepare: md5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
-    // Complete: md5(click_trans_id + service_id + secret_key + merchant_trans_id + merchant_prepare_id + amount + action + sign_time)
-    
+    // Calculate signature
     let hashString = `${click_trans_id}${service_id}${SECRET_KEY}${merchant_trans_id}`;
-    
     if (action === "1") {
       const merchant_prepare_id = formData.get("merchant_prepare_id")?.toString();
       hashString += merchant_prepare_id || "";
     }
-    
     hashString += `${amount}${action}${sign_time}`;
 
     const my_sign_string = crypto
@@ -51,13 +40,18 @@ export async function POST(req: NextRequest) {
       .update(hashString)
       .digest("hex");
     
-    console.log("Hash String:", hashString.replace(SECRET_KEY, "****")); // Mask secret in logs
     console.log("Calculated Signature:", my_sign_string);
     console.log("Received Signature:", sign_string);
+
+    const commonResponse = {
+      click_trans_id: parseInt(click_trans_id || "0"),
+      merchant_trans_id,
+    };
 
     if (my_sign_string !== sign_string) {
       console.error("Signature mismatch!");
       return NextResponse.json({
+        ...commonResponse,
         error: -1,
         error_note: "SIGN CHECK FAILED",
       });
@@ -65,6 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (error && parseInt(error) < 0) {
       return NextResponse.json({
+        ...commonResponse,
         error: -9,
         error_note: "TRANSACTION FAILED",
       });
@@ -72,20 +67,23 @@ export async function POST(req: NextRequest) {
 
     // Find the transaction in our database
     const transaction = await prisma.transaction.findUnique({
-      // @ts-ignore - numeric ID after schema update
+      // @ts-ignore
       where: { id: parseInt(merchant_trans_id || "0") },
       include: { user: true },
     });
 
     if (!transaction) {
       return NextResponse.json({
-        error: "-5",
+        ...commonResponse,
+        error: -5,
         error_note: "TRANSACTION NOT FOUND",
       });
     }
 
-    if (parseFloat(amount || "0") !== transaction.amount) {
+    // Amount check (allowing for minor string formatting differences)
+    if (Math.abs(parseFloat(amount || "0") - transaction.amount) > 0.01) {
       return NextResponse.json({
+        ...commonResponse,
         error: -2,
         error_note: "INCORRECT AMOUNT",
       });
@@ -93,6 +91,7 @@ export async function POST(req: NextRequest) {
 
     if (transaction.status === "COMPLETED") {
       return NextResponse.json({
+        ...commonResponse,
         error: -4,
         error_note: "TRANSACTION ALREADY COMPLETED",
       });
@@ -101,8 +100,7 @@ export async function POST(req: NextRequest) {
     // Action 0: Prepare
     if (action === "0") {
       return NextResponse.json({
-        click_trans_id: parseInt(click_trans_id || "0"),
-        merchant_trans_id,
+        ...commonResponse,
         merchant_prepare_id: transaction.id.toString(),
         error: 0,
         error_note: "Success",
@@ -111,52 +109,61 @@ export async function POST(req: NextRequest) {
 
     // Action 1: Complete
     if (action === "1") {
-      // Update transaction status
-      await prisma.transaction.update({
-        // @ts-ignore
-        where: { id: transaction.id },
-        data: {
-          status: "COMPLETED",
-          providerTransId: click_trans_id,
-        },
-      });
+      try {
+        // Update transaction status
+        await prisma.transaction.update({
+          // @ts-ignore
+          where: { id: transaction.id },
+          data: {
+            status: "COMPLETED",
+            providerTransId: click_trans_id,
+          },
+        });
 
-      // Update user plan
-      const planExpiresAt = new Date();
-      planExpiresAt.setDate(planExpiresAt.getDate() + 30);
-      let planPriority = 0;
-      if (transaction.plan === "VIP") planPriority = 3;
-      else if (transaction.plan === "STANDART") planPriority = 2;
-      else if (transaction.plan === "EKONOM") planPriority = 1;
-      else if (transaction.plan === "TEST") planPriority = 1;
+        // Update user plan
+        const planExpiresAt = new Date();
+        planExpiresAt.setDate(planExpiresAt.getDate() + 30);
+        let planPriority = 0;
+        if (transaction.plan === "VIP") planPriority = 3;
+        else if (transaction.plan === "STANDART") planPriority = 2;
+        else if (transaction.plan === "EKONOM") planPriority = 1;
+        else if (transaction.plan === "TEST") planPriority = 1;
 
-      await prisma.user.update({
-        where: { id: transaction.userId },
-        data: {
-          plan: transaction.plan,
-          planExpiresAt: planExpiresAt,
-          planPriority: planPriority,
-          isVerified: true,
-        },
-      });
+        await prisma.user.update({
+          where: { id: transaction.userId },
+          data: {
+            plan: transaction.plan,
+            planExpiresAt: planExpiresAt,
+            planPriority: planPriority,
+            isVerified: true,
+          },
+        });
 
-      return NextResponse.json({
-        click_trans_id: parseInt(click_trans_id || "0"),
-        merchant_trans_id,
-        merchant_confirm_id: transaction.id.toString(),
-        error: 0,
-        error_note: "Success",
-      });
+        return NextResponse.json({
+          ...commonResponse,
+          merchant_confirm_id: transaction.id.toString(),
+          error: 0,
+          error_note: "Success",
+        });
+      } catch (dbErr) {
+        console.error("DB Update Error:", dbErr);
+        return NextResponse.json({
+          ...commonResponse,
+          error: -8,
+          error_note: "INTERNAL SERVER ERROR",
+        });
+      }
     }
 
     return NextResponse.json({
+      ...commonResponse,
       error: -3,
       error_note: "ACTION NOT FOUND",
     });
   } catch (err: any) {
     console.error("Click Webhook Error:", err);
     return NextResponse.json({
-      error: "-8",
+      error: -8,
       error_note: "INTERNAL SERVER ERROR",
     });
   }
