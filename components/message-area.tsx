@@ -987,7 +987,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
     <>
     <div className="flex-1 flex flex-col min-h-0 h-full bg-muted/10 dark:bg-slate-950 overflow-hidden relative">
       {/* Header */}
-      <div className="flex-none z-40 px-6 py-4 flex items-center justify-between gap-2">
+      <div className="flex-none sticky top-0 z-40 px-6 py-4 bg-background/60 backdrop-blur-lg flex items-center justify-between gap-2 transition-all">
         <div className="flex items-center gap-2 min-w-0">
           <Button variant="ghost" size="icon" asChild className="md:hidden shrink-0 h-10 w-10 rounded-2xl bg-secondary/80 hover:bg-secondary active:scale-90 transition-all border border-border/20">
             <Link href="/chat"><ArrowLeft className="h-6 w-6 text-primary" /></Link>
