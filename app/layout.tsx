@@ -88,6 +88,7 @@ export default async function RootLayout({
       <LocaleProvider>
         <html lang="uz" suppressHydrationWarning>
           <head>
+            <meta name="google-site-verification" content="alUvyCxwrWsrcfI0_0SzVAdEygW5WMKzEkc6Us1PjPw" />
             {/* Blocking script to suppress extension-injected hydration mismatches before React loads */}
             <script
               suppressHydrationWarning
