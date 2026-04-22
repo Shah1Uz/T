@@ -985,7 +985,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
   return (
     <>
-    <div className="flex-1 flex flex-col min-h-0 h-full bg-background dark:bg-slate-950 overflow-hidden relative">
+    <div className="flex-1 flex flex-col min-h-0 h-full bg-muted/10 dark:bg-slate-950 overflow-hidden relative">
       {/* Header */}
       <div className="flex-none z-40 px-3 py-2.5 border-b bg-card/80 backdrop-blur-xl flex items-center justify-between gap-2 shadow-sm">
         <div className="flex items-center gap-2 min-w-0">
@@ -1050,7 +1050,7 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none bg-muted/20 dark:bg-slate-900/40 flex flex-col">
+      <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-none flex flex-col">
         <div className="w-full max-w-4xl mx-auto p-4 md:p-6 space-y-6 flex-1 flex flex-col justify-end">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-20 text-muted-foreground opacity-50">
@@ -1422,9 +1422,9 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
 
       {/* Input area */}
       {!voice.recording && !voice.audioBlob && (
-        <div className="flex-none relative px-4 py-4 border-t bg-card flex items-center gap-3">
+        <div className="flex-none relative px-6 py-6 flex items-center gap-4">
           {showEmoji && (
-            <div className="absolute bottom-[100%] left-4 mb-2 z-50 shadow-2xl rounded-2xl overflow-hidden border border-border">
+            <div className="absolute bottom-[100%] left-6 mb-4 z-50 shadow-2xl rounded-2xl overflow-hidden border border-border">
                <EmojiPicker onEmojiClick={(e) => {
                  setText(t => t + e.emoji);
                }} />
@@ -1437,14 +1437,14 @@ export default function MessageArea({ chat, currentUserId }: { chat: any; curren
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11 rounded-full border-2 border-border/60 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 shrink-0 transition-all active:scale-90 shadow-sm"
+            className="h-12 w-12 rounded-full border-2 border-border/60 text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 shrink-0 transition-all active:scale-90 shadow-sm"
             onClick={() => fileInputRef.current?.click()}
           >
             <Plus className="h-6 w-6" />
           </Button>
 
           {/* Main Input Field */}
-          <div className="flex-1 relative flex items-center bg-muted/20 dark:bg-muted/10 rounded-full border-2 border-border/80 focus-within:border-primary/40 focus-within:bg-card transition-all duration-300 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+          <div className="flex-1 relative flex items-center bg-card dark:bg-slate-900 rounded-full border-2 border-border/80 focus-within:border-primary/40 transition-all duration-300 shadow-xl">
             <Button
               variant="ghost"
               size="icon"
