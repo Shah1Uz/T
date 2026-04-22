@@ -55,6 +55,13 @@ export async function POST(
 
     console.log("Processing message send (direct):", { text, hasAudio: !!audioFile, audioDuration, hasImage: !!imageFile, hasVideo: !!videoFile });
 
+    // Upload audio if provided
+    if (audioFile) {
+      console.log("Uploading audio...");
+      audioUrl = await uploadFile(audioFile);
+      console.log("Audio uploaded:", audioUrl);
+    }
+
     // Upload image if provided
     if (imageFile) {
       console.log("Uploading image...");
