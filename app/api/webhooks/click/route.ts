@@ -33,15 +33,27 @@ export async function POST(req: NextRequest) {
 
     const SECRET_KEY = process.env.CLICK_SECRET_KEY || "";
 
-    // Calculate signature: md5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
+    // Calculate signature: 
+    // Prepare: md5(click_trans_id + service_id + secret_key + merchant_trans_id + amount + action + sign_time)
+    // Complete: md5(click_trans_id + service_id + secret_key + merchant_trans_id + merchant_prepare_id + amount + action + sign_time)
+    
+    let hashString = `${click_trans_id}${service_id}${SECRET_KEY}${merchant_trans_id}`;
+    
+    if (action === "1") {
+      const merchant_prepare_id = formData.get("merchant_prepare_id")?.toString();
+      hashString += merchant_prepare_id || "";
+    }
+    
+    hashString += `${amount}${action}${sign_time}`;
+
     const my_sign_string = crypto
       .createHash("md5")
-      .update(
-        `${click_trans_id}${service_id}${SECRET_KEY}${merchant_trans_id}${amount}${action}${sign_time}`
-      )
+      .update(hashString)
       .digest("hex");
-
+    
+    console.log("Hash String:", hashString.replace(SECRET_KEY, "****")); // Mask secret in logs
     console.log("Calculated Signature:", my_sign_string);
+    console.log("Received Signature:", sign_string);
 
     if (my_sign_string !== sign_string) {
       console.error("Signature mismatch!");
