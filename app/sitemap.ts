@@ -2,7 +2,10 @@ import { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://uysell.uz';
+  // Use production URL if the environment variable is not set correctly or points to localhost
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : 'https://uysell.uz';
 
   // Fetch all listing IDs and update times
   const listings = await prisma.listing.findMany({
