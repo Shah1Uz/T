@@ -7,6 +7,10 @@ import prisma from "@/lib/prisma";
  * Documentation: http://docs.click.uz/
  */
 
+export async function GET() {
+  return new Response("Click Webhook is active. Use POST for payments.", { status: 200 });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
