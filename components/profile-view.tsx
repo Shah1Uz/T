@@ -46,8 +46,8 @@ export default function ProfileView({ user, listings }: ProfileViewProps) {
           </div>
         )}
         
-        {/* Banner Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
+        {/* Banner Overlay Gradient - White Fade at bottom */}
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-background via-background/50 to-transparent z-10" />
 
         <div className="container h-full flex items-end pb-8 relative z-10">
           <Link href="/" className="absolute top-6 left-6 h-10 w-10 bg-card/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 hover:bg-card transition-all shadow-lg hover:scale-110 active:scale-95 group/back">

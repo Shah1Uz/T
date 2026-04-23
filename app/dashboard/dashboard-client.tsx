@@ -145,6 +145,9 @@ export default function DashboardClient({ listings, stats, user }: DashboardClie
           )}
           {/* Pattern Overlay */}
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.05]" />
+          
+          {/* Bottom White/Blur Fade Overlay */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#F8FAFC] dark:from-slate-950 to-transparent z-10" />
         </div>
 
         {/* Banner Action Button */}
