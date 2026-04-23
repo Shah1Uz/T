@@ -31,11 +31,27 @@ export default function ProfileView({ user, listings }: ProfileViewProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Premium Header/Banner */}
-      <div className="relative h-[250px] md:h-[350px] bg-gradient-to-br from-primary/20 via-primary/5 to-transparent overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-        <div className="container h-full flex items-end pb-8">
-          <Link href="/" className="absolute top-6 left-6 h-10 w-10 bg-card/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-background hover:bg-card transition-colors shadow-sm">
-            <ArrowLeft className="h-5 w-5 text-foreground" />
+      <div className="relative h-[250px] md:h-[350px] overflow-hidden group">
+        {user.profileBannerUrl ? (
+           <Image 
+             src={user.profileBannerUrl} 
+             alt="Profile Banner" 
+             fill 
+             priority
+             className="object-cover transition-transform duration-700 group-hover:scale-105" 
+           />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+          </div>
+        )}
+        
+        {/* Banner Overlay Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent" />
+
+        <div className="container h-full flex items-end pb-8 relative z-10">
+          <Link href="/" className="absolute top-6 left-6 h-10 w-10 bg-card/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20 hover:bg-card transition-all shadow-lg hover:scale-110 active:scale-95 group/back">
+            <ArrowLeft className="h-5 w-5 text-foreground transition-transform group-hover/back:-translate-x-1" />
           </Link>
         </div>
       </div>

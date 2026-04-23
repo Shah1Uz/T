@@ -27,6 +27,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface Stats {
   listings: number;
@@ -43,7 +46,47 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ listings, stats, user }: DashboardClientProps) {
   const { t, locale } = useLocale();
+  const router = useRouter();
   const [expandedListing, setExpandedListing] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading(locale === "uz" ? "Banner yuklanmoqda..." : "Загрузка баннера...");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { url } = await uploadRes.json();
+
+      const updateRes = await fetch("/api/user/profile-banner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!updateRes.ok) throw new Error("Update failed");
+
+      toast.success(locale === "uz" ? "Banner muvaffaqiyatli yangilandi!" : "Баннер успешно обновлен!", { id: toastId });
+      router.refresh();
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      toast.error(locale === "uz" ? "Xatolik yuz berdi" : "Произошла ошибка", { id: toastId });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const statCards = [
     {
@@ -86,14 +129,48 @@ export default function DashboardClient({ listings, stats, user }: DashboardClie
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-20">
-      {/* Header Section */}
-      <div className="bg-white dark:bg-slate-900 border-b border-border/50 pb-8 pt-12 md:pb-12 md:pt-16">
-        <div className="container max-w-6xl">
+      {/* Header Section with Profile Banner */}
+      <div className="relative group/banner overflow-hidden border-b border-border/50">
+        {/* Banner Background */}
+        <div className="absolute inset-0 h-full w-full bg-white dark:bg-slate-900">
+          {user?.profileBannerUrl ? (
+            <Image 
+              src={user.profileBannerUrl} 
+              alt="Banner" 
+              fill 
+              className="object-cover opacity-80"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-transparent" />
+          )}
+          {/* Pattern Overlay */}
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.05]" />
+        </div>
+
+        {/* Banner Action Button */}
+        <div className="absolute top-6 right-6 z-20">
+          <label className={cn(
+            "flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-foreground text-xs font-black uppercase tracking-widest rounded-xl cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-xl",
+            isUploading && "opacity-50 cursor-not-allowed pointer-events-none"
+          )}>
+            <Edit3 className="h-4 w-4" />
+            {isUploading ? "..." : (locale === "uz" ? "Banner" : "Баннер")}
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleBannerUpload} 
+              disabled={isUploading}
+            />
+          </label>
+        </div>
+
+        <div className="container max-w-6xl relative z-10 pb-8 pt-12 md:pb-12 md:pt-16">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-1 bg-primary rounded-full" />
-                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground uppercase">
+                <div className="h-10 w-1 bg-primary rounded-full shadow-[0_0_15px_rgba(var(--primary),0.5)]" />
+                <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground uppercase drop-shadow-sm">
                   {t("dashboard.title")}
                 </h1>
                 {user?.plan && user.plan !== "FREE" && (
@@ -103,7 +180,7 @@ export default function DashboardClient({ listings, stats, user }: DashboardClie
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground font-medium text-lg max-w-2xl">
+              <p className="text-muted-foreground font-medium text-lg max-w-2xl drop-shadow-sm">
                 {t("dashboard.subtitle")}
               </p>
             </div>
@@ -115,7 +192,7 @@ export default function DashboardClient({ listings, stats, user }: DashboardClie
                   {t("dashboard.new_listing")}
                 </Link>
               </Button>
-              <Button variant="outline" asChild className="h-14 px-6 rounded-2xl border-2 font-black uppercase text-[10px] tracking-widest hover:bg-muted/50 hidden md:flex">
+              <Button variant="outline" asChild className="h-14 px-6 rounded-2xl border-2 bg-white/50 backdrop-blur-sm font-black uppercase text-[10px] tracking-widest hover:bg-muted/50 hidden md:flex">
                 <Link href="/pricing" className="flex items-center">
                   <History className="mr-2 h-4 w-4" />
                   {locale === "uz" ? "Tarix" : "История"}
@@ -132,7 +209,7 @@ export default function DashboardClient({ listings, stats, user }: DashboardClie
                 transition={{ delay: i * 0.1 }}
                 key={i}
                 className={cn(
-                  "relative group overflow-hidden bg-white dark:bg-slate-900 border rounded-[32px] p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1",
+                  "relative group overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border rounded-[32px] p-6 transition-all duration-300 hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1",
                   card.border
                 )}
               >
