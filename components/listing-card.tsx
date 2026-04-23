@@ -403,7 +403,7 @@ export default function ListingCard({ listing }: { listing: any }) {
             const res = await fetch(`/api/listings/${listing.id}`, { method: "DELETE" });
             if (res.ok) window.location.reload();
           }}
-          className="absolute top-4 right-4 z-20 h-10 w-10 flex items-center justify-center rounded-xl bg-red-500 text-white shadow-xl hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100"
+          className="absolute top-4 right-4 z-20 h-10 w-10 flex items-center justify-center rounded-xl bg-red-500 text-white shadow-xl hover:bg-red-600 transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
         >
           <Trash2 className="h-4 w-4" />
         </button>
