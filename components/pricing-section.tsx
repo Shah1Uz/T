@@ -472,8 +472,8 @@ export default function PricingSection({ currentPlan }: { currentPlan?: string }
             >
               <div className="flex items-center justify-between w-full px-6 relative z-10">
                 <div className="flex items-center gap-4">
-                  <div className="shrink-0 w-10 h-10 rounded-2xl bg-[#0073FF] flex items-center justify-center transition-transform group-hover:scale-110">
-                    <span className="text-white font-black italic text-xs">C</span>
+                  <div className="shrink-0 w-10 h-10 rounded-2xl bg-white border border-border/50 flex items-center justify-center transition-transform group-hover:scale-110 overflow-hidden p-1.5">
+                    <Image src="/click-logo.png" alt="CLICK" width={40} height={40} className="object-contain" />
                   </div>
                   <div className="text-left">
                     <span className="block text-xl font-black text-foreground tracking-tight">CLICK</span>
