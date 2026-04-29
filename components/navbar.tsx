@@ -50,7 +50,7 @@ export default function Navbar() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (pathname === "/" || pathname?.startsWith("/chat")) return null;
+  if (pathname === "/") return null;
 
   return (
     <>
@@ -419,7 +419,7 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </header>
-      {pathname !== "/" && !pathname?.startsWith("/chat") && <div className="h-[68px] 3xl:h-[100px]" />}
+      {pathname !== "/" && <div className="h-[68px] 3xl:h-[100px]" />}
     </>
   );
 }

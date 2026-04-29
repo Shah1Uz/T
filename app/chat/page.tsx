@@ -112,7 +112,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="w-full h-[100dvh] overflow-hidden flex flex-col">
+    <div className="w-full h-[calc(100dvh-68px)] 3xl:h-[calc(100dvh-100px)] overflow-hidden flex flex-col">
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Sidebar */}
         <div className={clsx(
